@@ -13,7 +13,7 @@
 | LLM | DeepSeek / Qwen，OpenAI 兼容接口，key 只在服务端 |
 | 用途 | **个人非商用**：不收费、不对外分发数据、不发布自制预报 |
 
-当前进度：**M3 已完成**（骨架、配置、CLI、集合统计、地理编码 + Open-Meteo + METAR、fact_pack 编排、500/850hPa 环流与天气图、ENSO、引用校验的解释层）。路线图见 [里程碑](#里程碑)。
+当前进度：**M4 已完成**（CLI + API + 前端单页：地图/云图、多模式预报、500/850hPa 环流、天气图、SSE 对话与引用校验）。路线图见 [里程碑](#里程碑)。
 
 ---
 
@@ -38,6 +38,12 @@
 成功标准（一句话）：对「明安图镇现在的天气及其成因」这个提问，能给出①带时效和来源的实况
 ②多模式预报一致性 ③基于 500hPa/850hPa 与天气图的成因推断 ④明确标注哪些是观测、哪些是预报、
 哪些是推断 ⑤每个数字可点回原始来源。
+
+![界面：地图、云图与事实包](docs/ui-overview.jpg)
+
+![对话：观测/预报/推断三段 + 引用校验通过](docs/ui-answer.jpg)
+
+（截图取自 2026-11-15 实际运行，观测来自 281 km 外的北京首都机场，因此界面明确标注「代表性低」。）
 
 ---
 
@@ -81,7 +87,48 @@ python -m skylens
 | `skylens pack <地名>` | 组装 fact_pack：观测 + 24h 趋势 + 多模式预报 + 环流 + 天气图 + ENSO；`--raw` / `--out` |
 | `skylens explain <地名>` | fact_pack → 单次 LLM 解释 → `facts[].ref` 与 `inference.basis[]` 全部校验；不通过就重试一次，仍失败走模板降级 |
 
-`serve` / `ask` 按里程碑逐个落地（M4），不提供「假实现」。
+`serve` / `ask` 两个旧子命令已被 ``/api`` + 前端取代，不再提供。
+
+### 起 Web 界面（M4）
+
+```bash
+# 1) 后端：FastAPI（同时托管已构建的前端）
+uv run uvicorn skylens.api.main:app --host 127.0.0.1 --port 8000
+
+# 2a) 生产式：先构建前端，再由后端直接提供页面
+cd web && npm install && npm run build && cd ..
+# 打开 http://127.0.0.1:8000
+
+# 2b) 开发式：Vite 热更新（/api 已代理到 8000）
+cd web && npm run dev      # http://localhost:5173
+```
+
+接口（全部返回结构化 JSON；`/api/explain` 另有 SSE）：
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/healthz` | 存活与版本 |
+| GET | `/api/fact_pack?place=&days=` | 确定性事实包，进程内缓存 15 min |
+| GET | `/api/explain?place=` | 非流式解释（便于 curl / 测试） |
+| POST | `/api/explain` | SSE：`stage` → `stage` → `stage` → `answer` → `done` |
+| GET | `/api/charts` | 天气图链接（JMA 实况/24h/48h + 中央气象台外挂页） |
+| GET | `/api/warnings?lat=&lon=` | 官方预警；**未接入时明确返回 `available: false`**，不编造 |
+
+前端没有用框架：`maplibre-gl` + 原生 TS，构建产物约 290 kB（gzip）。三层信息用
+`观测=蓝 / 预报=琥珀 / 推断=紫` 区分，引用以 `facts[].ref` 显示在数值旁边。
+
+### 需要你去申请的 key
+
+| key | 用途 | 是否必需 | 申请入口 |
+|---|---|---|---|
+| **天地图** | 底图（**审图号合规**，没有则降级为纯色底图 + 云图） | 推荐 | <https://console.tianditu.gov.cn>（实名，免费） |
+| **和风天气** | 中国区要素、公里级格点、**官方预警** | 可选 | <https://console.qweather.com>（免费开发版） |
+| DeepSeek | 解释层（缺失则永远走模板降级） | 已配置 | <https://platform.deepseek.com> |
+| data.cma.cn | 气候态 / 500hPa 距平 | 可选 | <https://data.cma.cn>（注册，非商用条款） |
+| Open-Meteo / METAR / JMA / 中央气象台 / NASA GIBS / NOAA / Nominatim | 其余全部数据 | **免密钥** | — |
+
+天地图 key 填 `web/.env` 的 `VITE_TIANDITU_KEY`；和风天气 key 填根目录 `.env` 的
+`SKYLENS_QWEATHER_KEY`（CLI 的 `sources` 与 `doctor` 会告诉你缺哪个）。
 
 典型输出（2026-11-15 实测，观测来自 281 km 外的北京首都机场）：
 
@@ -106,7 +153,7 @@ python -m skylens
 | **M1** ✅ | provider 层 + Open-Meteo + METAR + 中文地理编码 | `skylens pack "明安图镇"` 打印完整 fact_pack JSON |
 | **M2** ✅ | 统计 + synoptic + 天气图 URL + ENSO | `forecast.agreement` 与 `synoptic.pattern` 非空 |
 | **M3** ✅ | explain 层 + 模板降级 + 引用校验 | `facts[].ref` 全部可在 fact_pack 中解析 |
-| **M4** | FastAPI + 前端单页（地图 + 聊天 + 天气图） | 浏览器能看云图、能提问、引用可点 |
+| **M4** ✅ | FastAPI + 前端单页（地图 + 聊天 + 天气图） | 浏览器能看云图、能提问、引用可点 |
 | **M5** | Capacitor 打包 | Android 真机能装、能显示地图、能对话 |
 | **M6** | 回归问题集（10 个明安图/锡林浩特/二连浩特问题） | `not_covered` 与 `basis` 合理，无编造数值 |
 
@@ -146,11 +193,16 @@ python -m skylens
 │   │   ├── charts.py         # JMA 地面图 + 中央气象台外链
 │   │   └── enso.py           # NOAA CPC ONI
 │   ├── cache/store.py        # TTL 文件缓存
-│   └── api/                  # FastAPI（M4）
-└── tests/                    # pytest：统计/单位/配置/各 provider/fact_pack/校验/解释/CLI
+│   └── api/                  # FastAPI：routes.py（接口+SSE）/ main.py（装配+CORS）
+├── web/                      # Vite + TS + MapLibre（无框架）
+│   ├── index.html
+│   ├── src/{main,api,map,panels,chat}.ts
+│   └── src/theme.css
+└── tests/                    # pytest：统计/单位/配置/各 provider/fact_pack/校验/解释/API/CLI
 ```
 
-`serve`、`ask`、`qweather.py`、预警搬运在 M4 补上。完整设计与取舍见 [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md)。
+`serve`、`ask`、`qweather.py`、预警搬运、Capacitor 套壳在 M5–M6 补上。
+完整设计与取舍见 [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md)。
 
 ### 实测与文档的偏差（有据可查）
 
@@ -160,6 +212,7 @@ python -m skylens
 | 离散度来源 | ensemble 成员级 spread | M2 仍是 4 个模式逐日 p10–p90（模式间离散度） | `forecast.agreement` 已可用；成员级 ensemble 待接入，契约不变 |
 | METAR 最近站 | 站点表或 stationinfo | `bbox` 查询最省事；锡林浩特 ZBXH 当时无报，最近可用站是 281 km 外的 ZBAA | bbox 逐级放大（4°→8°），代表性落成「低」并写进 fact_pack |
 | 解释层 `max_tokens` | 2000 | 2000 时真实回答被截断（`finish_reason=length`，JSON 断在 4134 字符） | 默认提到 3000 + 截断检测 + 重试时要求「精简、facts ≤ 6 条」 |
+| 引用路径写法 | 文档写 `daily[0].temp_max` | DeepSeek 实际写 `daily.1.precip_mm.mean`（点号下标），浏览器端因此降级过一次 | 解析器同时接受 `[1]` 与 `.1` 两种下标写法，仍然只认 fact_pack 里真实存在的路径 |
 | 模型名 | `deepseek-chat` | 服务端返回的实际模型是 `deepseek-flash` | 配置不变（用官方别名），`doctor` 会打印真实模型名 |
 
 ---

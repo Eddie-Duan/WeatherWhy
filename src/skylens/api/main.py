@@ -21,7 +21,7 @@ WEB_DIST = REPO_ROOT / "web" / "dist"
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="天镜 SkyLens API",
+        title="WeatherWhy API",
         version=__version__,
         summary="多源天气事实包与可溯源解释（个人非商用，不发布预报）",
     )

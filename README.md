@@ -1,13 +1,17 @@
-# 天镜 SkyLens
+# WeatherWhy（天镜 SkyLens）
 
 > 个人天气数据可视化与解释工具：多源预报 + 云图 + 天气图 + **带出处、分层次、说得出原因**的解释。
 
-给定一个地点，SkyLens 把多源天气数据、卫星云图、天气图与环流形势聚合成一份确定性的
+给定一个地点，WeatherWhy 把多源天气数据、卫星云图、天气图与环流形势聚合成一份确定性的
 **事实包（fact_pack）**，再由 LLM 把这份事实翻译成人话——每个数字都能点回原始来源。
+
+> 命名：对外名称是 **WeatherWhy**；早期设计文档里叫「天镜 SkyLens」，因此仓库内的代码标识
+> （Python 包 `skylens`、CLI `skylens`、`SKYLENS_*` 环境变量、`fact_pack` 契约）保持原名不动，
+> 只为避免无收益的改名成本。界面与 README 用 WeatherWhy。
 
 | 项 | 值 |
 |---|---|
-| 中文名 / 英文名 | 天镜 / SkyLens |
+| 名称 | WeatherWhy（旧名 天镜 SkyLens） |
 | 形态 | Web 优先 → Capacitor 套壳出 App |
 | 技术栈 | Python 3.12+（FastAPI + httpx）、TypeScript（Vite + MapLibre） |
 | LLM | DeepSeek / Qwen，OpenAI 兼容接口，key 只在服务端 |

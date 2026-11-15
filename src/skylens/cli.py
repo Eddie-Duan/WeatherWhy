@@ -28,7 +28,7 @@ from skylens.settings import get_settings, save_secret_to_env
 
 app = App(
     name="skylens",
-    help="天镜 SkyLens —— 多源天气事实包与可溯源解释（个人非商用，不发布预报）",
+    help="WeatherWhy —— 多源天气事实包与可溯源解释（个人非商用，不发布预报）",
     version=__version__,
 )
 console = Console()

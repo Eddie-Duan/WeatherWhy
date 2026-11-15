@@ -45,13 +45,7 @@ body {
 .brand h1 {
   font-size: 20px;
   margin: 0;
-  letter-spacing: 2px;
-}
-
-.brand-en {
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .place-form,

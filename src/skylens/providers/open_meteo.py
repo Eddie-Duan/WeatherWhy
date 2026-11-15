@@ -8,7 +8,9 @@
 from __future__ import annotations
 
 import math
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -120,6 +122,86 @@ async def fetch_daily_forecast(
         }
     except Exception as exc:  # provider 不抛异常出界
         return {"error": str(exc), "provider": "open_meteo"}
+    finally:
+        if own_client:
+            await client.aclose()
+
+
+# fact_pack 字段 ← Open-Meteo pressure-level 小时变量
+PRESSURE_VARIABLES: dict[str, str] = {
+    "h500_geopotential_m": "geopotential_height_500hPa",
+    "t500_c": "temperature_500hPa",
+    "t850_c": "temperature_850hPa",
+    "wind850_speed_ms": "wind_speed_850hPa",
+    "wind850_dir_deg": "wind_direction_850hPa",
+}
+
+
+def pick_nearest_hour(times: list[str], at: datetime) -> int:
+    """在小时序列里挑最接近 ``at`` 的下标（离线可测，不依赖当前时间）。"""
+    target = at.replace(tzinfo=None)
+    best_index, best_gap = 0, None
+    for index, stamp in enumerate(times):
+        moment = datetime.fromisoformat(stamp)
+        gap = abs((moment - target).total_seconds())
+        if best_gap is None or gap < best_gap:
+            best_index, best_gap = index, gap
+    return best_index
+
+
+async def fetch_pressure_levels(
+    lat: float,
+    lon: float,
+    *,
+    at: datetime | None = None,
+    settings: Settings | None = None,
+    cache: TTLCache | None = None,
+    client: httpx.AsyncClient | None = None,
+) -> dict[str, Any]:
+    """500/850hPa 环流背景（成因解释的原料）。失败返回 ``{"error": ...}``，不抛异常。"""
+    settings = settings or Settings()
+    at = at or datetime.now(ZoneInfo("Asia/Shanghai"))
+    params = {
+        "latitude": round(lat, 4),
+        "longitude": round(lon, 4),
+        "hourly": ",".join(PRESSURE_VARIABLES.values()),
+        "timezone": "Asia/Shanghai",
+        "past_days": 1,
+        "forecast_days": 2,
+        "temperature_unit": "celsius",
+        "wind_speed_unit": "ms",
+    }
+    own_client = client is None
+    client = client or create_client(settings)
+    source_url = str(httpx.Request("GET", registry.OPEN_METEO_FORECAST, params=params).url)
+    try:
+        key = make_key(registry.OPEN_METEO_FORECAST, params)
+        payload = cache_get(cache, key, registry.TTLS.pressure_levels)
+        if payload is None:
+            resp = await client.get(registry.OPEN_METEO_FORECAST, params=params)
+            if resp.status_code != 200:
+                return {"error": f"HTTP {resp.status_code}", "provider": "open_meteo_pressure"}
+            payload = resp.json()
+            cache_set(cache, key, payload)
+
+        hourly = payload.get("hourly") or {}
+        times = hourly.get("time") or []
+        if not times:
+            return {"error": "响应缺少 hourly.time", "provider": "open_meteo_pressure"}
+        index = pick_nearest_hour(times, at)
+
+        result: dict[str, Any] = {
+            "provider": "open_meteo_pressure",
+            "valid_time": times[index] + "+08:00",
+            "source_url": source_url,
+        }
+        for field, variable in PRESSURE_VARIABLES.items():
+            series = hourly.get(variable)
+            value = series[index] if series and index < len(series) else None
+            result[field] = None if value is None else round(float(value), 1)
+        return result
+    except Exception as exc:  # provider 不抛异常出界
+        return {"error": str(exc), "provider": "open_meteo_pressure"}
     finally:
         if own_client:
             await client.aclose()

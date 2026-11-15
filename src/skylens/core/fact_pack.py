@@ -4,7 +4,8 @@
 所以 ``fact_pack_id``（内容哈希）同时进日志与解释层，便于回溯。
 
 M1 覆盖 ``location / observed / trend_24h / forecast / provenance``；
-``synoptic / climate / warnings`` 在 M2 填入，未实现时一律 ``null`` 并进 ``missing``。
+M2 补 ``synoptic``（500/850hPa + 天气图 + 环流型规则判定）与 ``climate.enso``；
+``warnings`` 需和风天气 key，留待 M4，未接入时一律 ``null`` / 空数组并进 ``missing``。
 """
 
 from __future__ import annotations
@@ -22,7 +23,11 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from skylens.cache.store import TTLCache
+from skylens.core import vocab
+from skylens.core.synoptic import build_synoptic
 from skylens.net import create_client
+from skylens.providers import charts as charts_provider
+from skylens.providers import enso as enso_provider
 from skylens.providers import geocode as geocode_provider
 from skylens.providers import metar as metar_provider
 from skylens.providers import open_meteo as open_meteo_provider
@@ -30,11 +35,11 @@ from skylens.settings import Settings, get_settings
 
 SCHEMA_VERSION = "1.0"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
-MISSING_M2 = "synoptic / climate / warnings（M2 提供）"
 
 Geocoder = Callable[..., Awaitable[dict[str, Any]]]
 Forecaster = Callable[..., Awaitable[dict[str, Any]]]
 Observer = Callable[..., Awaitable[dict[str, Any]]]
+Loader = Callable[..., Awaitable[dict[str, Any]]]
 
 
 def _now() -> datetime:
@@ -87,6 +92,9 @@ async def build_fact_pack(
     geocoder: Geocoder | None = None,
     forecaster: Forecaster | None = None,
     observer: Observer | None = None,
+    pressure_loader: Loader | None = None,
+    chart_loader: Loader | None = None,
+    enso_loader: Loader | None = None,
 ) -> dict[str, Any]:
     """给定地名（或坐标）产出 fact_pack。取数失败只记 ``missing``，不抛异常。"""
     settings = settings or get_settings()
@@ -95,6 +103,9 @@ async def build_fact_pack(
     geocoder = geocoder or geocode_provider.geocode
     forecaster = forecaster or open_meteo_provider.fetch_daily_forecast
     observer = observer or metar_provider.fetch_nearest
+    pressure_loader = pressure_loader or open_meteo_provider.fetch_pressure_levels
+    chart_loader = chart_loader or charts_provider.fetch_charts
+    enso_loader = enso_loader or enso_provider.fetch_enso
 
     own_client = client is None
     client = client or create_client(settings)
@@ -146,12 +157,40 @@ async def build_fact_pack(
             cache=cache,
             client=client,
         )
-        (forecast, forecast_entry), (observed, observed_entry) = await asyncio.gather(
+        pressure_coro = pressure_loader(
+            location["lat"],
+            location["lon"],
+            settings=settings,
+            cache=cache,
+            client=client,
+        )
+        charts_coro = chart_loader(settings=settings, cache=cache, client=client)
+        enso_coro = enso_loader(settings=settings, cache=cache, client=client)
+        (
+            (forecast, forecast_entry),
+            (observed, observed_entry),
+            (pressure, pressure_entry),
+            (
+                charts,
+                charts_entry,
+            ),
+            (enso, enso_entry),
+        ) = await asyncio.gather(
             _timed("open_meteo", forecast_coro, settings.request_deadline_s),
             _timed("metar", observed_coro, settings.request_deadline_s),
+            _timed("open_meteo_pressure", pressure_coro, settings.request_deadline_s),
+            _timed("charts", charts_coro, settings.request_deadline_s),
+            _timed("enso", enso_coro, settings.request_deadline_s),
         )
 
-        providers = [geo_entry, forecast_entry, observed_entry]
+        providers = [
+            geo_entry,
+            forecast_entry,
+            observed_entry,
+            pressure_entry,
+            charts_entry,
+            enso_entry,
+        ]
         missing: list[str] = []
         notes: list[str] = []
 
@@ -163,11 +202,37 @@ async def build_fact_pack(
             missing.append(f"多模式预报（{forecast['error']}）")
         if not observed.get("available"):
             missing.append("本地实况（附近无可用 METAR）")
-        missing.append(MISSING_M2)
-        notes.append("M1 阶段：synoptic / climate / warnings 恒为 null")
-
+        if "error" in pressure:
+            missing.append(f"500/850hPa 环流（{pressure['error']}）")
+        if "error" in charts:
+            missing.append(f"天气图（{charts['error']}）")
+        if "error" in enso:
+            missing.append(f"ENSO 指数（{enso['error']}）")
+        missing.append("官方预警（需和风天气 key，M4 接入）")
+        missing.append("h500 距平与气候态（需 data.cma.cn / ERA5，未实现）")
+        notes.append("离散度为多模式 p10–p90（模式间），成员级 ensemble spread 待 M2 后续接入")
         if not observed.get("available") and observed.get("error"):
             notes.append(f"METAR：{observed['error']}")
+
+        synoptic = build_synoptic(
+            {} if "error" in pressure else pressure,
+            charts.get("charts") or [],
+        )
+        climate: dict[str, Any] = {
+            "season": vocab.season_label(_now().month),
+            "enso": (
+                None
+                if "error" in enso
+                else {
+                    "phase": enso.get("phase"),
+                    "oni": enso.get("oni"),
+                    "month": enso.get("month"),
+                    "source": enso.get("source"),
+                    "source_url": enso.get("source_url"),
+                }
+            ),
+            "climate_normal": None,
+        }
 
         pack: dict[str, Any] = {
             "schema_version": SCHEMA_VERSION,
@@ -186,8 +251,8 @@ async def build_fact_pack(
                     "agreement": forecast.get("agreement", {}),
                 }
             ),
-            "synoptic": None,
-            "climate": None,
+            "synoptic": synoptic,
+            "climate": climate,
             "warnings": [],
             "provenance": {
                 "providers": providers,

@@ -31,6 +31,26 @@ REPRESENTATIVENESS_LEVELS: tuple[Level, ...] = (LEVEL_LOW, LEVEL_MID, LEVEL_HIGH
 
 _COMPASS_8 = ("北", "东北", "东", "东南", "南", "西南", "西", "西北")
 
+# 月份 → 气候季节（中文习惯：11 月是初冬，不是深秋）
+_SEASONS = {
+    1: "隆冬",
+    2: "冬末",
+    3: "初春",
+    4: "春",
+    5: "春末",
+    6: "初夏",
+    7: "盛夏",
+    8: "夏末",
+    9: "初秋",
+    10: "秋",
+    11: "初冬",
+    12: "隆冬",
+}
+
+
+def season_label(month: int) -> str:
+    return _SEASONS.get(month, "初冬")
+
 
 def agreement_level(variable: str, spread: float) -> Level:
     """把离散度换成「高/中/低」一致性等级。未知要素按风处理并在文档里说明。"""

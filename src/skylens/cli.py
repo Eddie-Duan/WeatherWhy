@@ -20,7 +20,9 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from skylens import __version__
+from skylens.core.explain import explain as explain_pack
 from skylens.core.fact_pack import build_fact_pack
+from skylens.doctor import all_critical_ok, run_checks
 from skylens.providers.geocode import geocode
 from skylens.settings import get_settings, save_secret_to_env
 
@@ -144,6 +146,101 @@ def pack(
     _print_pack(pack_data)
 
 
+@app.command
+def explain(
+    place: str,
+    days: Annotated[int, Parameter(name=["--days"])] = 7,
+    raw: Annotated[bool, Parameter(name=["--raw"], help="打印解释 JSON")] = False,
+) -> None:
+    """组装 fact_pack → 单次 LLM 解释 → 引用校验；失败自动降级为模板版本。"""
+    settings = get_settings()
+
+    async def _run() -> tuple[dict, dict | None]:
+        pack_data = await build_fact_pack(place, days=days, settings=settings)
+        if "error" in pack_data:
+            return pack_data, None
+        return pack_data, await explain_pack(pack_data, settings=settings)
+
+    pack_data, answer = asyncio.run(_run())
+    if answer is None:
+        console.print(f"[red]fact_pack 生成失败[/red]：{pack_data.get('error')}")
+        raise SystemExit(1)
+
+    if raw:
+        console.print_json(json.dumps(answer, ensure_ascii=False))
+        return
+    _print_answer(answer, pack_data)
+
+
+@app.command
+def doctor(
+    no_llm: Annotated[bool, Parameter(name=["--no-llm"], help="跳过 LLM 连通性检查")] = False,
+) -> None:
+    """检查环境、密钥、LLM 与各数据源是否可用。"""
+    checks = asyncio.run(run_checks(get_settings(), check_llm=not no_llm))
+    table = Table(title="skylens doctor", header_style="bold")
+    table.add_column("检查")
+    table.add_column("结果")
+    table.add_column("详情")
+    table.add_column("耗时", justify="right")
+    for check in checks:
+        mark = "[green]OK[/green]" if check.ok else "[red]FAIL[/red]"
+        table.add_row(check.name, mark, check.detail, f"{check.latency_ms} ms")
+    console.print(table)
+    if not all_critical_ok(checks):
+        console.print("[red]关键检查未通过[/red]（Python / 密钥 / 缓存目录 / LLM 连通）")
+        raise SystemExit(1)
+
+
+def _print_answer(answer: dict, pack_data: dict) -> None:
+    location = pack_data["location"]
+    console.rule(f"{location['name']} · {location['admin']}")
+    console.print(f"[bold]{answer.get('headline', '')}[/bold]")
+    if answer.get("degraded"):
+        console.print(
+            "[yellow]本次未生成解释（降级为事实罗列）[/yellow]："
+            + str(answer.get("fallback_reason", ""))[:200]
+        )
+
+    facts = answer.get("facts") or []
+    if facts:
+        table = Table(header_style="bold", show_edge=False)
+        table.add_column("事实")
+        table.add_column("值")
+        table.add_column("引用", style="dim")
+        for fact in facts:
+            table.add_row(
+                str(fact.get("label", "")), str(fact.get("value", "")), str(fact.get("ref", ""))
+            )
+        console.print(table)
+
+    sections = (
+        ("观测", answer.get("observed")),
+        ("预报", answer.get("forecast")),
+        ("不确定性", answer.get("uncertainty")),
+        ("建议", answer.get("advice")),
+    )
+    for title, text in sections:
+        if text:
+            console.print(f"[cyan]{title}[/cyan] {text}")
+
+    inference = answer.get("inference") or {}
+    if inference.get("text"):
+        basis = "、".join(inference.get("basis") or []) or "无"
+        console.print(
+            f"[magenta]推断[/magenta]（置信度 {inference.get('confidence', '缺')}）"
+            f"{inference['text']}\n[dim]依据：{basis}[/dim]"
+        )
+
+    not_covered = answer.get("not_covered") or []
+    if not_covered:
+        console.print(f"[dim]未覆盖：{'；'.join(str(item) for item in not_covered)}[/dim]")
+
+    citations = answer.get("citations") or []
+    if citations:
+        console.print("[dim]引用：" + "  ".join(str(url) for url in citations[:6]) + "[/dim]")
+
+
 def _print_pack(data: dict) -> None:
     location = data["location"]
     console.rule(f"{location['name']} · {location['admin']}")
@@ -200,6 +297,29 @@ def _print_pack(data: dict) -> None:
     else:
         console.print("[red]无预报数据[/red]")
 
+    synoptic = data.get("synoptic") or {}
+    if synoptic.get("h500_geopotential_m") is not None or synoptic.get("charts"):
+        pattern = synoptic.get("pattern") or {}
+        console.print(
+            f"[magenta]环流[/magenta] 500hPa {_g(synoptic.get('h500_geopotential_m'))} m"
+            f"｜850hPa {_g(synoptic.get('t850_c'))} °C"
+            f" {_g(synoptic.get('wind850_dir_deg'))}° {_g(synoptic.get('wind850_speed_ms'))} m/s"
+            f"｜型：{pattern.get('label', '缺')}"
+        )
+        console.print(
+            f"  天气图 {len(synoptic.get('charts') or [])} 张"
+            f"（{synoptic.get('valid_time') or '时刻缺'}）"
+        )
+
+    climate = data.get("climate") or {}
+    if climate:
+        enso = climate.get("enso") or {}
+        console.print(
+            f"[magenta]气候[/magenta] {climate.get('season', '缺')}"
+            f"｜ENSO {enso.get('phase', '缺')}"
+            f"（ONI {_g(enso.get('oni'), 2)}，{enso.get('month', '缺')}）"
+        )
+
     console.print(f"[dim]缺失：{'；'.join(data['provenance']['missing'])}[/dim]")
 
 
@@ -210,12 +330,14 @@ def _fmt(block: dict) -> str:
     return f"{_g(mean)}±{_g(spread)}" if spread is not None else _g(mean)
 
 
-def _g(value: float | int | None) -> str:
-    """数字显示：整数去掉 ``.0``，其余保留一位小数。"""
+def _g(value: float | int | None, digits: int = 1) -> str:
+    """数字显示：整数去掉 ``.0``，其余按 ``digits`` 位小数。"""
     if value is None:
         return "—"
     number = float(value)
-    return str(int(number)) if number.is_integer() else f"{number:.1f}"
+    if number.is_integer():
+        return str(int(number))
+    return f"{number:.{digits}f}"
 
 
 def main() -> int:

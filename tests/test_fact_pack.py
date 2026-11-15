@@ -92,6 +92,48 @@ async def fake_metar(lat: float, lon: float, **_: Any) -> dict[str, Any]:
     return dict(OBSERVED)
 
 
+PRESSURE = {
+    "provider": "open_meteo_pressure",
+    "h500_geopotential_m": 5320.0,
+    "t500_c": -24.0,
+    "t850_c": -12.0,
+    "wind850_dir_deg": 300.0,
+    "wind850_speed_ms": 14.0,
+    "valid_time": "2026-11-15T17:00+08:00",
+    "source_url": "https://example.invalid/pressure",
+}
+
+CHART = {
+    "title": "JMA 亚洲地面天气图（实况）",
+    "url": "https://example.invalid/jma.png",
+    "valid_time": "2026-11-15T14:00:00+08:00",
+    "license": "JMA 政府標準利用規約",
+    "kind": "地面天气图",
+}
+
+ENSO = {
+    "provider": "enso",
+    "phase": "El Niño",
+    "oni": 2.46,
+    "month": "2026-08",
+    "season": "ASO",
+    "source": "NOAA CPC ONI",
+    "source_url": "https://example.invalid/oni.txt",
+}
+
+
+async def fake_pressure(lat: float, lon: float, **_: Any) -> dict[str, Any]:
+    return dict(PRESSURE)
+
+
+async def fake_charts(**_: Any) -> dict[str, Any]:
+    return {"provider": "charts", "charts": [dict(CHART)]}
+
+
+async def fake_enso(**_: Any) -> dict[str, Any]:
+    return dict(ENSO)
+
+
 async def build(**overrides: Any) -> dict[str, Any]:
     kwargs: dict[str, Any] = {
         "settings": settings(),
@@ -99,6 +141,9 @@ async def build(**overrides: Any) -> dict[str, Any]:
         "geocoder": fake_geocode,
         "forecaster": fake_forecast,
         "observer": fake_metar,
+        "pressure_loader": fake_pressure,
+        "chart_loader": fake_charts,
+        "enso_loader": fake_enso,
     }
     kwargs.update(overrides)
     return await fact_pack.build_fact_pack("明安图镇", **kwargs)
@@ -134,12 +179,29 @@ class TestContract:
         assert pack["forecast"]["models"] == ["ecmwf_ifs025", "gfs_seamless"]
         assert pack["forecast"]["agreement"]["temperature_max"]["level"] == "中"
 
-    async def test_unimplemented_sections_are_null_and_listed_as_missing(self) -> None:
+    async def test_synoptic_carries_pressure_pattern_and_charts(self) -> None:
         pack = await build()
-        assert pack["synoptic"] is None
-        assert pack["climate"] is None
+        synoptic = pack["synoptic"]
+
+        assert synoptic["h500_geopotential_m"] == 5320.0
+        assert synoptic["h500_anomaly_m"] is None
+        assert synoptic["charts"][0]["url"] == CHART["url"]
+        assert "深槽" in synoptic["pattern"]["label"]
+        assert synoptic["pattern"]["confidence"] == "推断"
+        assert synoptic["pattern"]["basis"][0] == "synoptic.h500_geopotential_m"
+
+    async def test_climate_has_season_and_enso(self) -> None:
+        pack = await build()
+        assert pack["climate"]["season"] in {"初冬", "隆冬"}
+        assert pack["climate"]["enso"]["phase"] == "El Niño"
+        assert pack["climate"]["climate_normal"] is None
+
+    async def test_warnings_and_climate_normal_are_listed_as_missing(self) -> None:
+        pack = await build()
         assert pack["warnings"] == []
-        assert any("M2" in item for item in pack["provenance"]["missing"])
+        missing = pack["provenance"]["missing"]
+        assert any("官方预警" in item for item in missing)
+        assert any("气候态" in item for item in missing)
 
     async def test_elevation_falls_back_to_forecast_grid(self) -> None:
         pack = await build()
@@ -149,7 +211,7 @@ class TestContract:
     async def test_provenance_records_every_provider(self) -> None:
         pack = await build()
         names = [entry["name"] for entry in pack["provenance"]["providers"]]
-        assert names == ["geocode", "open_meteo", "metar"]
+        assert names == ["geocode", "open_meteo", "metar", "open_meteo_pressure", "charts", "enso"]
         assert all(entry["ok"] for entry in pack["provenance"]["providers"])
 
 
@@ -178,6 +240,31 @@ class TestFailureHandling:
 
         pack = await build(geocoder=broken)
         assert pack["error"] == "geocode_not_found"
+
+    async def test_pressure_failure_keeps_synoptic_block_without_pattern_basis(self) -> None:
+        async def broken(lat: float, lon: float, **_: Any) -> dict[str, Any]:
+            return {"error": "HTTP 502", "provider": "open_meteo_pressure"}
+
+        pack = await build(pressure_loader=broken)
+        assert pack["synoptic"]["h500_geopotential_m"] is None
+        assert "资料缺失" in pack["synoptic"]["pattern"]["label"]
+        assert any("500/850hPa" in item for item in pack["provenance"]["missing"])
+
+    async def test_charts_failure_leaves_empty_chart_list(self) -> None:
+        async def broken(**_: Any) -> dict[str, Any]:
+            return {"error": "HTTP 403", "provider": "charts"}
+
+        pack = await build(chart_loader=broken)
+        assert pack["synoptic"]["charts"] == []
+        assert any("天气图" in item for item in pack["provenance"]["missing"])
+
+    async def test_enso_failure_sets_enso_null(self) -> None:
+        async def broken(**_: Any) -> dict[str, Any]:
+            return {"error": "HTTP 502", "provider": "enso"}
+
+        pack = await build(enso_loader=broken)
+        assert pack["climate"]["enso"] is None
+        assert any("ENSO" in item for item in pack["provenance"]["missing"])
 
 
 class TestSerialisation:

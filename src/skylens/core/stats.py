@@ -52,6 +52,33 @@ def _aggregate(values: np.ndarray, *, use_max: bool) -> float:
     return float(values.max() if use_max else values.min())
 
 
+def summarize_values(
+    values: Sequence[float], *, percentiles: tuple[float, float] = (10.0, 90.0)
+) -> dict[str, float]:
+    """一组值的集合统计：均值 + p10/p90 + 离散度（= p90 - p10）。
+
+    这是 fact_pack 里 ``{"mean","p10","p90","spread"}`` 的唯一实现；
+    ensemble 成员先各自压成一个值，再喂进来。
+    """
+    low_p, high_p = percentiles
+    array = np.asarray(list(values), dtype=float)
+    array = array[~np.isnan(array)]
+    if array.size == 0:
+        return {
+            "mean": float("nan"),
+            "p10": float("nan"),
+            "p90": float("nan"),
+            "spread": float("nan"),
+        }
+    p10, p90 = (float(v) for v in np.percentile(array, [low_p, high_p]))
+    return {
+        "mean": round(float(array.mean()), 2),
+        "p10": round(p10, 2),
+        "p90": round(p90, 2),
+        "spread": round(p90 - p10, 2),
+    }
+
+
 def calculate_ensemble_statistics(
     members: Sequence[Mapping[str, Any]],
     variable: str,
@@ -65,30 +92,10 @@ def calculate_ensemble_statistics(
     每个成员先按 ``use_max`` 沿时间轴压成一个值（最高温取 max、最低温取 min），
     再在成员之间做统计——这正是「多模式一致吗」要回答的量。
     """
-    low_p, high_p = percentiles
-    per_member = np.asarray(
-        [
-            _aggregate(extract_variable_data(m, variable, kind=kind), use_max=use_max)
-            for m in members
-        ],
-        dtype=float,
-    )
-    per_member = per_member[~np.isnan(per_member)]
-    if per_member.size == 0:
-        return {
-            "mean": float("nan"),
-            "p10": float("nan"),
-            "p90": float("nan"),
-            "spread": float("nan"),
-        }
-
-    p10, p90 = (float(v) for v in np.percentile(per_member, [low_p, high_p]))
-    return {
-        "mean": round(float(per_member.mean()), 2),
-        "p10": round(p10, 2),
-        "p90": round(p90, 2),
-        "spread": round(p90 - p10, 2),
-    }
+    per_member = [
+        _aggregate(extract_variable_data(m, variable, kind=kind), use_max=use_max) for m in members
+    ]
+    return summarize_values(per_member, percentiles=percentiles)
 
 
 def calculate_model_agreement(

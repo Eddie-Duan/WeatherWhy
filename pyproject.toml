@@ -31,6 +31,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
     "orjson>=3.10",
+    "tzdata>=2024.1",  # Windows 无 IANA 时区库，zoneinfo 需要它
 ]
 
 [project.scripts]

@@ -15,6 +15,7 @@
 | [天地图](https://www.tianditu.gov.cn/) | 底图 | 免费 key，已过国家地图审核 | 标识审图号 | 按 key | 降级为纯色底图 |
 | [NOAA CPC/PSL](https://www.cpc.ncep.noaa.gov/) | ONI / SOI | 公有领域 | 注明 NOAA CPC | 日频 | `climate.enso=null` |
 | [data.cma.cn](http://data.cma.cn/) | 站点历史、气候态 | 免费注册，**非商用** | 按协议 | 按协议 | 缺失则跳过气候对比 |
+| [DeepSeek](https://www.deepseek.com/)（备选 Qwen） | 解释层：只接收 fact_pack，产出人话 | 按 token 计费，境内 | 无需额外署名 | 由服务商限流 | 超时/失败 → 模板降级（`degraded: true`） |
 
 ## 三条不得越线的地方
 

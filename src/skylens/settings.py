@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.deepseek.com/v1"
     llm_api_key: SecretStr | None = None
     llm_model: str = "deepseek-chat"
-    llm_max_tokens: int = 2000
+    llm_max_tokens: int = 3000  # 输出契约有 9 个字段，2000 会被截断（实测）
     llm_temperature: float = 0.3
 
     # --- 国内数据源（可选，缺省回退 Open-Meteo）---

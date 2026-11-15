@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     http_timeout_s: float = 10.0
     http_retries: int = 2
     request_deadline_s: float = 20.0
+    trust_env: bool = True  # 读系统代理；访问 aviationweather / JMA 时常需要
 
     @field_validator("cache_dir")
     @classmethod

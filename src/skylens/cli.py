@@ -320,6 +320,15 @@ def _print_pack(data: dict) -> None:
             f"（ONI {_g(enso.get('oni'), 2)}，{enso.get('month', '缺')}）"
         )
 
+    warnings = data.get("warnings") or []
+    if warnings:
+        console.print(f"[red]官方预警 {len(warnings)} 条（原文照搬，禁止改写）[/red]")
+        for item in warnings:
+            console.print(f"  {item.get('title')}｜{item.get('issuer')} {item.get('issued_at')}")
+            console.print(f"  [dim]{item.get('text')}[/dim]")
+    else:
+        console.print("[dim]官方预警：无生效预警或未接入[/dim]")
+
     console.print(f"[dim]缺失：{'；'.join(data['provenance']['missing'])}[/dim]")
 
 

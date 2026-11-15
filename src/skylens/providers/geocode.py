@@ -19,7 +19,7 @@ import httpx
 
 from skylens.cache.store import TTLCache, cache_get, cache_set, make_key
 from skylens.net import create_client
-from skylens.providers import registry
+from skylens.providers import qweather, registry
 from skylens.settings import Settings
 
 _CJK = ("\u4e00", "\u9fff")
@@ -130,16 +130,17 @@ async def geocode(
         source = ""
 
         if settings.qweather_key is not None:
+            url = qweather.geo_url(settings)
             params = {
                 "location": query,
                 "key": settings.qweather_key.get_secret_value(),
                 "lang": "zh",
                 "number": 5,
             }
-            key = make_key(registry.QWEATHER_GEOAPI, {**params, "key": "<redacted>"})
+            key = make_key(url, {**params, "key": "<redacted>"})
             payload = cache_get(cache, key, registry.TTLS.geocode)
             if payload is None:
-                resp = await client.get(registry.QWEATHER_GEOAPI, params=params)
+                resp = await client.get(url, params=params)
                 payload = resp.json() if resp.status_code == 200 else {}
                 cache_set(cache, key, payload)
             if payload.get("location"):

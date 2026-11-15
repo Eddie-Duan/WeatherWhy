@@ -108,11 +108,39 @@ class TestChartsAndWarnings:
         body = (await client.get("/api/charts")).json()
         assert body == {"charts": [], "error": "HTTP 403"}
 
-    async def test_warnings_are_explicitly_unavailable(self, client: httpx.AsyncClient) -> None:
+    async def test_warnings_report_unavailable_honestly(
+        self, client: httpx.AsyncClient, monkeypatch
+    ) -> None:
+        async def fake(*_: Any, **__: Any) -> dict:
+            return {"available": False, "warnings": [], "error": "HTTP 403 Invalid Host"}
+
+        monkeypatch.setattr(routes, "fetch_warnings", fake)
         body = (await client.get("/api/warnings", params={"lat": 42.3, "lon": 115.0})).json()
+
         assert body["warnings"] == []
         assert body["available"] is False
+        assert "403" in body["error"]
         assert "不得改写" in body["policy"]
+
+    async def test_warnings_are_passed_through_verbatim(
+        self, client: httpx.AsyncClient, monkeypatch
+    ) -> None:
+        text = "正镶白旗气象台2026年11月15日11时00分发布大风蓝色预警信号：……"
+
+        async def fake(*_: Any, **__: Any) -> dict:
+            return {
+                "available": True,
+                "warnings": [
+                    {"title": "大风蓝色预警信号", "text": text, "issuer": "正镶白旗气象台"}
+                ],
+                "policy": "官方原文原样传播",
+            }
+
+        monkeypatch.setattr(routes, "fetch_warnings", fake)
+        body = (await client.get("/api/warnings", params={"lat": 42.3, "lon": 115.0})).json()
+
+        assert body["available"] is True
+        assert body["warnings"][0]["text"] == text
 
 
 class TestExplain:

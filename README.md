@@ -117,7 +117,7 @@ cd web && npm run dev      # http://localhost:5173
 | GET | `/api/explain?place=` | 非流式解释（便于 curl / 测试） |
 | POST | `/api/explain` | SSE：`stage` → `stage` → `stage` → `answer` → `done` |
 | GET | `/api/charts` | 天气图链接（JMA 实况/24h/48h + 中央气象台外挂页） |
-| GET | `/api/warnings?lat=&lon=` | 官方预警；**未接入时明确返回 `available: false`**，不编造 |
+| GET | `/api/warnings?lat=&lon=` | 官方预警原文（和风天气）；未配置/无权限时返回 `available: false` 与具体原因，不编造 |
 
 前端没有用框架：`maplibre-gl` + 原生 TS，构建产物约 290 kB（gzip）。三层信息用
 `观测=蓝 / 预报=琥珀 / 推断=紫` 区分，引用以 `facts[].ref` 显示在数值旁边。
@@ -127,7 +127,7 @@ cd web && npm run dev      # http://localhost:5173
 | key | 用途 | 是否必需 | 申请入口 |
 |---|---|---|---|
 | **天地图** | 底图（**审图号合规**，没有则降级为纯色底图 + 云图） | 推荐 | <https://console.tianditu.gov.cn>（实名，免费） |
-| **和风天气** | 中国区要素、公里级格点、**官方预警** | 可选 | <https://console.qweather.com>（免费开发版） |
+| **和风天气** | 中国区要素、公里级格点、**官方预警** | 可选 | <https://console.qweather.com>（免费开发版；**需要控制台里的 API Host**） |
 | DeepSeek | 解释层（缺失则永远走模板降级） | 已配置 | <https://platform.deepseek.com> |
 | data.cma.cn | 气候态 / 500hPa 距平 | 可选 | <https://data.cma.cn>（注册，非商用条款） |
 | Open-Meteo / METAR / JMA / 中央气象台 / NASA GIBS / NOAA / Nominatim | 其余全部数据 | **免密钥** | — |
@@ -219,6 +219,7 @@ cd web && npm run dev      # http://localhost:5173
 | 离散度来源 | ensemble 成员级 spread | M2 仍是 4 个模式逐日 p10–p90（模式间离散度） | `forecast.agreement` 已可用；成员级 ensemble 待接入，契约不变 |
 | METAR 最近站 | 站点表或 stationinfo | `bbox` 查询最省事；锡林浩特 ZBXH 当时无报，最近可用站是 281 km 外的 ZBAA | bbox 逐级放大（4°→8°），代表性落成「低」并写进 fact_pack |
 | 解释层 `max_tokens` | 2000 | 2000 时真实回答被截断（`finish_reason=length`，JSON 断在 4134 字符） | 默认提到 3000 + 截断检测 + 重试时要求「精简、facts ≤ 6 条」 |
+| 和风天气端点 | 文档写 `devapi.qweather.com` 与 `geoapi` | 新版控制台给每个账号独立 **API Host**，旧 host 一律 403 `Invalid Host`；城市搜索改到 `/geo/v2/city/lookup`，预警在 `/v7/warning/now` | 新增 `SKYLENS_QWEATHER_API_HOST`，URL 由它拼出；`doctor` 会直接报 `Invalid Host` |
 | 引用路径写法 | 文档写 `daily[0].temp_max` | DeepSeek 实际写 `daily.1.precip_mm.mean`（点号下标），浏览器端因此降级过一次 | 解析器同时接受 `[1]` 与 `.1` 两种下标写法，仍然只认 fact_pack 里真实存在的路径 |
 | 模型名 | `deepseek-chat` | 服务端返回的实际模型是 `deepseek-flash` | 配置不变（用官方别名），`doctor` 会打印真实模型名 |
 

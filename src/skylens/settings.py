@@ -38,9 +38,19 @@ class Settings(BaseSettings):
 
     # --- 国内数据源（可选，缺省回退 Open-Meteo）---
     qweather_key: SecretStr | None = None
+    # 和风天气新版控制台给每个账号分配独立 API Host（形如 xxx.re.qweatherapi.com）；
+    # 用旧的 devapi.qweather.com 会被判 403 Invalid Host（实测）。
+    qweather_api_host: str = "devapi.qweather.com"
     tianditu_key: str | None = None
     # 底图审图号（合规要求显著标注）。号码按天地图当年批次填写，代码里不写死。
     map_approval_no: str | None = None
+
+    @property
+    def qweather_base_url(self) -> str:
+        host = self.qweather_api_host.strip().rstrip("/")
+        if host.startswith("http"):
+            return host
+        return f"https://{host}"
 
     # --- 运行 ---
     cache_dir: Path = Field(default_factory=lambda: Path.home() / ".cache" / "skylens")
@@ -54,6 +64,11 @@ class Settings(BaseSettings):
     @classmethod
     def _expand_cache_dir(cls, value: Path) -> Path:
         return value.expanduser()
+
+    @field_validator("qweather_api_host")
+    @classmethod
+    def _default_qweather_host(cls, value: str) -> str:
+        return value.strip() or "devapi.qweather.com"
 
     @property
     def llm_api_key_value(self) -> str | None:

@@ -28,6 +28,7 @@ from skylens import __version__
 from skylens.core.explain import explain as explain_pack
 from skylens.core.fact_pack import build_fact_pack
 from skylens.providers.charts import fetch_charts
+from skylens.providers.qweather import fetch_warnings
 from skylens.settings import get_settings
 
 router = APIRouter(prefix="/api")
@@ -113,13 +114,16 @@ async def charts() -> dict[str, Any]:
 
 @router.get("/warnings")
 async def warnings(lat: float, lon: float) -> dict[str, Any]:
-    """官方预警。**当前未接入**：没有和风天气 key，宁可返回空也不编造。"""
+    """官方预警：有和风天气 key 且接口有权限时返回原文，否则如实返回不可用。"""
+    result = await fetch_warnings(lat, lon, settings=get_settings())
     return {
-        "warnings": [],
-        "available": False,
-        "reason": "未配置和风天气 key（预警接入待 M4 后续完成）",
+        "warnings": result.get("warnings") or [],
+        "available": bool(result.get("available")),
+        "error": result.get("error") or result.get("reason"),
+        "source_url": result.get("source_url"),
+        "policy": result.get("policy")
+        or "官方原文原样传播，不得改写、不得截断；AI 解读必须分栏显示",
         "requested": {"lat": lat, "lon": lon},
-        "policy": "官方原文原样传播，不得改写、不得截断；AI 解读必须分栏显示",
     }
 
 

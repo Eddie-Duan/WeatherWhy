@@ -6,7 +6,7 @@ import httpx
 import pytest
 import respx
 
-from skylens.providers import geocode, registry
+from skylens.providers import geocode, qweather, registry
 from skylens.settings import Settings
 
 NOMINATIM_HITS = [
@@ -77,7 +77,8 @@ class TestNominatimFirst:
 
     @respx.mock
     async def test_qweather_wins_when_key_configured(self) -> None:
-        respx.get(registry.QWEATHER_GEOAPI).mock(
+        settings = _settings(qweather_key="k", qweather_api_host="demo.re.qweatherapi.com")
+        respx.get(qweather.geo_url(settings)).mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -94,7 +95,7 @@ class TestNominatimFirst:
                 },
             )
         )
-        result = await geocode.geocode("明安图镇", settings=_settings(qweather_key="k"))
+        result = await geocode.geocode("明安图镇", settings=settings)
 
         assert result["geocode_source"] == "qweather"
         assert result["admin"] == "内蒙古自治区 锡林郭勒盟 明安图"

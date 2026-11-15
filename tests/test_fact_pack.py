@@ -134,6 +134,26 @@ async def fake_enso(**_: Any) -> dict[str, Any]:
     return dict(ENSO)
 
 
+WARNING_TEXT = "正镶白旗气象台2026年11月15日11时00分发布大风蓝色预警信号：24小时内可能受大风影响。"
+
+
+async def fake_warnings(lat: float, lon: float, **_: Any) -> dict[str, Any]:
+    return {
+        "provider": "qweather",
+        "available": True,
+        "warnings": [
+            {
+                "title": "大风蓝色预警信号",
+                "level": "蓝色",
+                "issuer": "正镶白旗气象台",
+                "issued_at": "2026-11-15T11:00+08:00",
+                "text": WARNING_TEXT,
+                "policy": "官方原文原样传播",
+            }
+        ],
+    }
+
+
 async def build(**overrides: Any) -> dict[str, Any]:
     kwargs: dict[str, Any] = {
         "settings": settings(),
@@ -144,6 +164,7 @@ async def build(**overrides: Any) -> dict[str, Any]:
         "pressure_loader": fake_pressure,
         "chart_loader": fake_charts,
         "enso_loader": fake_enso,
+        "warnings_loader": fake_warnings,
     }
     kwargs.update(overrides)
     return await fact_pack.build_fact_pack("明安图镇", **kwargs)
@@ -196,12 +217,22 @@ class TestContract:
         assert pack["climate"]["enso"]["phase"] == "El Niño"
         assert pack["climate"]["climate_normal"] is None
 
-    async def test_warnings_and_climate_normal_are_listed_as_missing(self) -> None:
+    async def test_warnings_are_moved_verbatim(self) -> None:
         pack = await build()
+        assert pack["warnings"][0]["text"] == WARNING_TEXT
+        assert pack["warnings"][0]["issuer"] == "正镶白旗气象台"
+
+    async def test_climate_normal_is_listed_as_missing(self) -> None:
+        pack = await build()
+        assert any("气候态" in item for item in pack["provenance"]["missing"])
+
+    async def test_warnings_unavailable_is_listed_as_missing(self) -> None:
+        async def broken(lat: float, lon: float, **_: Any) -> dict[str, Any]:
+            return {"available": False, "warnings": [], "error": "HTTP 403 Invalid Host"}
+
+        pack = await build(warnings_loader=broken)
         assert pack["warnings"] == []
-        missing = pack["provenance"]["missing"]
-        assert any("官方预警" in item for item in missing)
-        assert any("气候态" in item for item in missing)
+        assert any("官方预警" in item for item in pack["provenance"]["missing"])
 
     async def test_elevation_falls_back_to_forecast_grid(self) -> None:
         pack = await build()
@@ -211,7 +242,15 @@ class TestContract:
     async def test_provenance_records_every_provider(self) -> None:
         pack = await build()
         names = [entry["name"] for entry in pack["provenance"]["providers"]]
-        assert names == ["geocode", "open_meteo", "metar", "open_meteo_pressure", "charts", "enso"]
+        assert names == [
+            "geocode",
+            "open_meteo",
+            "metar",
+            "open_meteo_pressure",
+            "charts",
+            "enso",
+            "qweather",
+        ]
         assert all(entry["ok"] for entry in pack["provenance"]["providers"])
 
 

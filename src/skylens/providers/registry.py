@@ -12,9 +12,9 @@ from skylens.cache.store import TTL
 OPEN_METEO_FORECAST = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_ENSEMBLE = "https://ensemble-api.open-meteo.com/v1/ensemble"
 OPEN_METEO_GEOCODING = "https://geocoding-api.open-meteo.com/v1/search"
-QWEATHER_GEOAPI = "https://geoapi.qweather.com/v2/city/lookup"
 NOMINATIM_SEARCH = "https://nominatim.openstreetmap.org/search"
 METAR_API = "https://aviationweather.gov/api/data/metar"
+# 和风天气 URL 由 settings.qweather_api_host 拼出（每账号一个 API Host），见 providers/qweather.py
 
 USER_AGENT = (
     "skylens/0.1 (personal non-commercial weather reader; https://github.com/Eddie-Duan/WeatherWhy)"

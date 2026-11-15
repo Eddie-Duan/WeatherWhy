@@ -121,6 +121,18 @@ async def _check_oni(client: httpx.AsyncClient) -> str:
     return f"{len(response.text.splitlines())} 行 ONI 表"
 
 
+async def _check_qweather(settings: Settings) -> str:
+    """和风天气：没有 key 就报「未配置」，有 key 但 Host 不对会明确报 Invalid Host。"""
+    from skylens.providers.qweather import fetch_warnings
+
+    if settings.qweather_key is None:
+        raise RuntimeError("未配置 SKYLENS_QWEATHER_KEY")
+    result = await fetch_warnings(42.3, 115.0, settings=settings)
+    if result.get("available"):
+        return f"{len(result.get('warnings') or [])} 条生效预警｜{settings.qweather_api_host}"
+    raise RuntimeError(str(result.get("error") or result.get("reason") or "不可用"))
+
+
 async def run_checks(settings: Settings | None = None, *, check_llm: bool = True) -> list[Check]:
     settings = settings or Settings()
     client = create_client(settings)
@@ -163,6 +175,7 @@ async def run_checks(settings: Settings | None = None, *, check_llm: bool = True
 
     checks.append(await _timed_check("Open-Meteo", _check_open_meteo(client)))
     checks.append(await _timed_check("METAR", _check_metar(client)))
+    checks.append(await _timed_check("和风天气", _check_qweather(settings)))
     checks.append(await _timed_check("JMA 天气图", _check_jma(client)))
     checks.append(await _timed_check("NOAA ONI", _check_oni(client)))
     await client.aclose()

@@ -13,7 +13,7 @@
 | LLM | DeepSeek / Qwen，OpenAI 兼容接口，key 只在服务端 |
 | 用途 | **个人非商用**：不收费、不对外分发数据、不发布自制预报 |
 
-当前进度：**M0 已完成**（仓库骨架、配置层、CLI 壳、集合统计、CI）。路线图见 [里程碑](#里程碑)。
+当前进度：**M1 已完成**（仓库骨架、配置层、CLI、集合统计、地理编码 + Open-Meteo + METAR、fact_pack 编排）。路线图见 [里程碑](#里程碑)。
 
 ---
 
@@ -51,9 +51,12 @@ cd WeatherWhy
 uv sync --all-extras          # 建 .venv 并装齐运行 + dev 依赖
 
 cp .env.example .env          # 填 SKYLENS_LLM_API_KEY（其余 key 可选）
+```bash
 uv run skylens --help
-uv run skylens sources        # 看各数据源授权形态与本机配置状态
-uv run python -m skylens      # 打印版本
+uv run skylens sources            # 看各数据源授权形态与本机配置状态
+uv run skylens where "明安图镇"    # 地理编码候选 + 置信度
+uv run skylens pack "明安图镇"     # 组装并打印 fact_pack（--raw 出 JSON）
+uv run python -m skylens          # 打印版本
 ```
 
 不用 uv 也可以：
@@ -64,15 +67,29 @@ pip install -e ".[dev]"
 python -m skylens
 ```
 
-### 当前可用命令（M0）
+### 当前可用命令（M0–M1）
 
 | 命令 | 作用 |
 |---|---|
 | `skylens version` | 打印版本 |
 | `skylens sources` | 列出数据源、授权形态、本地是否已配 key |
 | `skylens configure` | 交互式或 `--llm-api-key/--qweather-key/--tianditu-key` 写密钥进 `.env`（0600） |
+| `skylens where <地名>` | 地理编码：候选列表 + 行政区 + 置信度 |
+| `skylens pack <地名>` | 组装 fact_pack：观测（METAR）+ 24h 趋势 + 多模式预报；`--raw` 输出完整 JSON，`--out` 落盘 |
 
-`where` / `pack` / `explain` / `serve` / `ask` 按里程碑逐个落地（M1–M4），不提供「假实现」。
+`explain` / `serve` / `ask` 按里程碑逐个落地（M3–M4），不提供「假实现」。
+
+典型输出（2026-11-15 实测，观测来自 281 km 外的北京首都机场）：
+
+```text
+──────────────── 明安图镇 · 内蒙古自治区 正镶白旗 ────────────────
+42.2984, 115.0014｜海拔 1345 m｜地理编码 nominatim（0.85）
+观测 2026-11-15T17:00:00+08:00（6 分钟前）
+  10 °C  露点 3 °C  湿度 62%  气压 1025 hPa
+  站点 ZBAA Beijing Intl, BJ, CN｜代表性 低：281 km，不能代表当地局地实况
+多模式预报（4 个模式）：-1.6±1.4 / -1.8±1.4 …（离散度越小越一致）
+缺失：synoptic / climate / warnings（M2 提供）
+```
 
 ---
 
@@ -81,7 +98,7 @@ python -m skylens
 | 阶段 | 内容 | 验收标准 |
 |---|---|---|
 | **M0** ✅ | 建仓、目录、settings、CI（ruff + pytest） | `uv run pytest` 绿；`python -m skylens` 打印版本 |
-| **M1** | provider 层 + Open-Meteo + METAR + 中文地理编码 | `skylens pack "明安图镇"` 打印完整 fact_pack JSON |
+| **M1** ✅ | provider 层 + Open-Meteo + METAR + 中文地理编码 | `skylens pack "明安图镇"` 打印完整 fact_pack JSON |
 | **M2** | 统计 + synoptic + 天气图 URL + ENSO | `forecast.agreement` 与 `synoptic.pattern` 非空 |
 | **M3** | explain 层 + 模板降级 + 引用校验 | `facts[].ref` 全部可在 fact_pack 中解析 |
 | **M4** | FastAPI + 前端单页（地图 + 聊天 + 天气图） | 浏览器能看云图、能提问、引用可点 |
@@ -102,20 +119,34 @@ python -m skylens
 │   ├── __init__.py           # 版本号
 │   ├── __main__.py           # python -m skylens
 │   ├── settings.py           # pydantic-settings 配置层
+│   ├── net.py                # HTTP client 工厂（共享 SSL 上下文）
 │   ├── cli.py                # cyclopts + rich 命令行
 │   ├── core/                 # 确定性核心：统计、单位、文案（不调 LLM）
+│   │   ├── fact_pack.py      # 编排 providers → fact_pack（M1）
 │   │   ├── stats.py          # ← 从旧仓 statistics.py 迁移
 │   │   ├── units.py          # 单位换算唯一入口
 │   │   └── vocab.py          # 中文术语与分级阈值表
 │   ├── providers/
-│   │   └── base.py           # Sourced + Provider Protocol（数据契约）
-│   ├── api/                  # FastAPI（M4）
-│   └── cache/                # TTL 缓存（M1）
-└── tests/                    # pytest：统计、单位、配置、CLI 冒烟
+│   │   ├── base.py           # Sourced + Provider Protocol（数据契约）
+│   │   ├── registry.py       # endpoint 与模式清单（旧仓硬编码的收容处）
+│   │   ├── geocode.py        # QWeather → Nominatim → Open-Meteo
+│   │   ├── open_meteo.py     # 多模式逐日预报 + 离散度
+│   │   └── metar.py          # 最近机场实况 + 24h 趋势 + 代表性
+│   ├── cache/store.py        # TTL 文件缓存
+│   └── api/                  # FastAPI（M4）
+└── tests/                    # pytest：统计/单位/配置/地理编码/预报/实况/fact_pack/CLI
 ```
 
-`core/fact_pack.py`、`core/explain.py`、`core/validate.py`、各 provider 在 M1–M3 补上。
-完整设计与取舍见 [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md)。
+`core/explain.py`、`core/validate.py`、`providers/qweather.py`、`charts.py`、`enso.py`
+在 M2–M3 补上。完整设计与取舍见 [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md)。
+
+### 实测与文档的偏差（有据可查）
+
+| 项 | 文档说法 | 实测（2026-11-15） | 处理 |
+|---|---|---|---|
+| 中文地名源顺序 | QWeather 主、Open-Meteo 备、Nominatim 兜底 | Open-Meteo geocoding 对「明安图镇 / 正镶白旗」**返回空**；Nominatim 精确命中（42.2984, 115.0014，正镶白旗） | 顺序改为 QWeather → **Nominatim** → Open-Meteo，理由写进模块文档 |
+| 离散度来源 | ensemble 成员级 spread | M1 用 4 个模式逐日 p10–p90（即「模式间离散度」） | `forecast.agreement` 已可用；成员级 ensemble 留到 M2，届时不改契约 |
+| METAR 最近站 | 站点表或 stationinfo | `bbox` 查询最省事；锡林浩特 ZBXH 当时无报，最近可用站是 281 km 外的 ZBAA | bbox 逐级放大（4°→8°），代表性落成「低」并写进 fact_pack |
 
 ---
 

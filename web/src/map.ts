@@ -1,10 +1,9 @@
 // 地图：天地图底图（有 key 时）+ NASA GIBS 云图叠加 + 位置标记。
-// 没有天地图 key 时降级为纯色底图 + 云图（设计文档 §7 的降级路径），不会白屏。
+// 天地图 key 由后端 /api/config 下发（浏览器端 key，服务端请求会被拒），
+// 没有 key 时降级为纯色底图 + 云图（设计文档 §7），不会白屏。
 
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-
-const TIANDITU_KEY = (import.meta.env.VITE_TIANDITU_KEY as string | undefined) ?? "";
 
 function isoDay(offsetDays: number): string {
   const date = new Date(Date.now() + offsetDays * 86_400_000);
@@ -17,26 +16,40 @@ const GIBS_TILES =
 
 export interface SkyMap {
   map: maplibregl.Map;
+  hasBasemap: boolean;
   setCloudVisible(visible: boolean): void;
   goTo(lat: number, lon: number, label: string): void;
 }
 
-export function createMap(container: string): SkyMap {
+const TILE_TEMPLATE = (key: string, matrix: string) =>
+  `https://t0.tianditu.gov.cn/${matrix}_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0` +
+  `&LAYER=${matrix}&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles` +
+  `&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=${key}`;
+
+export function createMap(container: string, basemapKey = ""): SkyMap {
   const sources: Record<string, unknown> = {};
   const layers: unknown[] = [
     { id: "bg", type: "background", paint: { "background-color": "#0d141d" } },
   ];
 
-  if (TIANDITU_KEY) {
-    sources.tianditu = {
+  if (basemapKey) {
+    // 矢量底图与注记层必须分成两个 source（同一个 source 的 tiles 数组表示同一层的多个地址）
+    sources["tianditu-vec"] = {
       type: "raster",
-      tiles: [
-        `https://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=${TIANDITU_KEY}`,
-      ],
+      tiles: [TILE_TEMPLATE(basemapKey, "vec")],
       tileSize: 256,
-      attribution: "天地图（已审图）",
+      attribution: "天地图",
     };
-    layers.push({ id: "tianditu", type: "raster", source: "tianditu" });
+    sources["tianditu-cva"] = {
+      type: "raster",
+      tiles: [TILE_TEMPLATE(basemapKey, "cva")],
+      tileSize: 256,
+      attribution: "天地图",
+    };
+    layers.push(
+      { id: "tianditu-vec", type: "raster", source: "tianditu-vec" },
+      { id: "tianditu-cva", type: "raster", source: "tianditu-cva" },
+    );
   }
 
   const map = new maplibregl.Map({
@@ -48,10 +61,10 @@ export function createMap(container: string): SkyMap {
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
 
-  const label = document.createElement("div");
-  label.className = "marker";
-  label.title = "当前位置";
-  const marker = new maplibregl.Marker({ element: label }).setLngLat([115, 42.3]);
+  const markerEl = document.createElement("div");
+  markerEl.className = "marker";
+  markerEl.title = "当前位置";
+  const marker = new maplibregl.Marker({ element: markerEl }).setLngLat([115, 42.3]);
 
   map.on("load", () => {
     map.addSource("gibs", {
@@ -60,13 +73,18 @@ export function createMap(container: string): SkyMap {
       tileSize: 256,
       attribution: "NASA GIBS",
     });
-    map.addLayer({ id: "gibs", type: "raster", source: "gibs", paint: { "raster-opacity": 0.72 } });
+    // 云图压在底图之上、注记之下：地名/道路保持清晰可读
+    const beforeId = map.getLayer("tianditu-cva") ? "tianditu-cva" : undefined;
+    map.addLayer(
+      { id: "gibs", type: "raster", source: "gibs", paint: { "raster-opacity": 0.6 } },
+      beforeId,
+    );
     marker.addTo(map);
-    map.setLayoutProperty("gibs", "visibility", "visible");
   });
 
   return {
     map,
+    hasBasemap: Boolean(basemapKey),
     setCloudVisible(visible: boolean) {
       if (map.getLayer("gibs")) {
         map.setLayoutProperty("gibs", "visibility", visible ? "visible" : "none");
@@ -74,12 +92,8 @@ export function createMap(container: string): SkyMap {
     },
     goTo(lat: number, lon: number, name: string) {
       marker.setLngLat([lon, lat]);
-      label.title = name;
+      markerEl.title = name;
       map.flyTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 5.5), duration: 900 });
     },
-  } satisfies SkyMap;
-}
-
-export function hasBasemap(): boolean {
-  return Boolean(TIANDITU_KEY);
+  };
 }

@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     # --- 国内数据源（可选，缺省回退 Open-Meteo）---
     qweather_key: SecretStr | None = None
     tianditu_key: str | None = None
+    # 底图审图号（合规要求显著标注）。号码按天地图当年批次填写，代码里不写死。
+    map_approval_no: str | None = None
 
     # --- 运行 ---
     cache_dir: Path = Field(default_factory=lambda: Path.home() / ".cache" / "skylens")

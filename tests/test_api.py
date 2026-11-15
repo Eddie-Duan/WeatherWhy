@@ -40,6 +40,22 @@ class TestHealth:
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
+    async def test_config_without_key(self, client: httpx.AsyncClient, monkeypatch) -> None:
+        from skylens.settings import Settings
+
+        monkeypatch.setattr(routes, "get_settings", lambda: Settings(_env_file=None))
+        body = (await client.get("/api/config")).json()
+        assert body["tianditu_key"] is None
+        assert "天地图" in body["attribution"]["basemap"]
+
+    async def test_config_passes_browser_key(self, client: httpx.AsyncClient, monkeypatch) -> None:
+        from skylens.settings import Settings
+
+        monkeypatch.setattr(
+            routes, "get_settings", lambda: Settings(_env_file=None, tianditu_key="demo-key")
+        )
+        assert (await client.get("/api/config")).json()["tianditu_key"] == "demo-key"
+
 
 class TestFactPack:
     async def test_returns_pack(self, client: httpx.AsyncClient, fake_pack: dict) -> None:

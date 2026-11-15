@@ -1,9 +1,9 @@
-// 入口：加载天气图 → 查询地点 → 渲染事实包/地图 → 接线对话。
+// 入口：取后端公开配置 → 加载天气图 → 查询地点 → 渲染事实包/地图 → 接线对话。
 
 import "./theme.css";
-import { fetchCharts, fetchFactPack, type FactPack } from "./api";
+import { fetchCharts, fetchFactPack, fetchSiteConfig, type FactPack } from "./api";
 import { createChat } from "./chat";
-import { createMap, hasBasemap } from "./map";
+import { createMap } from "./map";
 import { renderCharts, renderFact } from "./panels";
 
 const $ = <T extends HTMLElement>(id: string): T => {
@@ -25,11 +25,6 @@ const cloudToggle = $<HTMLInputElement>("cloud-toggle");
 const basemapNote = $<HTMLElement>("basemap-note");
 const locationBadge = $<HTMLElement>("location-badge");
 
-const skyMap = createMap("map");
-basemapNote.textContent = hasBasemap()
-  ? "底图：天地图（已审图）"
-  : "未配置 VITE_TIANDITU_KEY：纯色底图 + 云图";
-
 let current: FactPack | null = null;
 
 const setStatus = (text: string): void => {
@@ -42,53 +37,71 @@ const setBusy = (busy: boolean): void => {
   }
 };
 
-async function loadPlace(place: string): Promise<void> {
-  setBusy(true);
-  setStatus(`正在组装 ${place} 的事实包（确定性取数，不走 LLM）…`);
+async function boot(): Promise<void> {
+  // 天地图 key 由后端下发（浏览器端 key）；拿不到就降级为纯色底图
+  let basemapKey = (import.meta.env.VITE_TIANDITU_KEY as string | undefined) ?? "";
+  const approval = $<HTMLElement>("approval");
   try {
-    const pack = await fetchFactPack(place);
-    current = pack;
-    renderFact(factPanel, pack);
-    skyMap.goTo(pack.location.lat, pack.location.lon, pack.location.name);
-    locationBadge.hidden = false;
-    locationBadge.textContent = `${pack.location.name}（${pack.location.admin}）· ${
-      pack.observed.available ? `观测 ${pack.observed.station?.id ?? ""}` : "无可用观测"
-    }`;
-    const slow = pack.provenance.providers
-      .filter((provider) => !provider.ok)
-      .map((provider) => provider.name);
-    setStatus(
-      `${pack.location.name} 已加载｜fact_pack_id ${pack.fact_pack_id.slice(0, 16)}…` +
-        (slow.length ? `｜降级：${slow.join(", ")}` : ""),
-    );
-  } catch (error) {
-    setStatus(`加载失败：${error instanceof Error ? error.message : String(error)}`);
-  } finally {
-    setBusy(false);
+    const site = await fetchSiteConfig();
+    basemapKey = basemapKey || site.tianditu_key || "";
+    approval.textContent = site.map_approval_no
+      ? `地图审图号：${site.map_approval_no}（天地图）`
+      : "地图审图号待填：把天地图控制台的审图号写进 SKYLENS_MAP_APPROVAL_NO";
+  } catch {
+    approval.textContent = "";
   }
-}
 
-placeForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const place = placeInput.value.trim();
-  if (place) void loadPlace(place);
-});
+  const skyMap = createMap("map", basemapKey);
+  basemapNote.textContent = skyMap.hasBasemap
+    ? "底图：天地图（已审图）"
+    : "未配置天地图 key：纯色底图 + 云图";
 
-cloudToggle.addEventListener("change", () => {
-  skyMap.setCloudVisible(cloudToggle.checked);
-});
+  cloudToggle.addEventListener("change", () => {
+    skyMap.setCloudVisible(cloudToggle.checked);
+  });
 
-createChat({
-  messages,
-  form: askForm,
-  input: question,
-  note: chatNote,
-  place: () => current?.location.name ?? placeInput.value.trim(),
-  days: () => 7,
-  onBusy: setBusy,
-});
+  createChat({
+    messages,
+    form: askForm,
+    input: question,
+    note: chatNote,
+    place: () => current?.location.name ?? placeInput.value.trim(),
+    days: () => 7,
+    onBusy: setBusy,
+  });
 
-void (async () => {
+  placeForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const place = placeInput.value.trim();
+    if (place) void loadPlace(place);
+  });
+
+  async function loadPlace(place: string): Promise<void> {
+    setBusy(true);
+    setStatus(`正在组装 ${place} 的事实包（确定性取数，不走 LLM）…`);
+    try {
+      const pack = await fetchFactPack(place);
+      current = pack;
+      renderFact(factPanel, pack);
+      skyMap.goTo(pack.location.lat, pack.location.lon, pack.location.name);
+      locationBadge.hidden = false;
+      locationBadge.textContent = `${pack.location.name}（${pack.location.admin}）· ${
+        pack.observed.available ? `观测 ${pack.observed.station?.id ?? ""}` : "无可用观测"
+      }`;
+      const degraded = pack.provenance.providers
+        .filter((provider) => !provider.ok)
+        .map((provider) => provider.name);
+      setStatus(
+        `${pack.location.name} 已加载｜fact_pack_id ${pack.fact_pack_id.slice(0, 16)}…` +
+          (degraded.length ? `｜降级：${degraded.join(", ")}` : ""),
+      );
+    } catch (error) {
+      setStatus(`加载失败：${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   try {
     renderCharts(chartsPanel, await fetchCharts());
   } catch (error) {
@@ -97,4 +110,6 @@ void (async () => {
     }</p>`;
   }
   await loadPlace(placeInput.value.trim() || "明安图镇");
-})();
+}
+
+void boot();

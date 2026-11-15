@@ -112,6 +112,7 @@ cd web && npm run dev      # http://localhost:5173
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/api/healthz` | 存活与版本 |
+| GET | `/api/config` | 前端公开配置（天地图浏览器端 key、审图号） |
 | GET | `/api/fact_pack?place=&days=` | 确定性事实包，进程内缓存 15 min |
 | GET | `/api/explain?place=` | 非流式解释（便于 curl / 测试） |
 | POST | `/api/explain` | SSE：`stage` → `stage` → `stage` → `answer` → `done` |
@@ -131,7 +132,9 @@ cd web && npm run dev      # http://localhost:5173
 | data.cma.cn | 气候态 / 500hPa 距平 | 可选 | <https://data.cma.cn>（注册，非商用条款） |
 | Open-Meteo / METAR / JMA / 中央气象台 / NASA GIBS / NOAA / Nominatim | 其余全部数据 | **免密钥** | — |
 
-天地图 key 填 `web/.env` 的 `VITE_TIANDITU_KEY`；和风天气 key 填根目录 `.env` 的
+天地图 key 填根目录 `.env` 的 `SKYLENS_TIANDITU_KEY`（天地图**浏览器端** key，服务端请求会被
+判 403「请使用浏览器访问」，所以由后端 `/api/config` 下发给前端，只维护一份）；审图号填
+`SKYLENS_MAP_APPROVAL_NO`（号码按天地图当年批次，代码里不写死）。和风天气 key 填
 `SKYLENS_QWEATHER_KEY`（CLI 的 `sources` 与 `doctor` 会告诉你缺哪个）。
 
 典型输出（2026-11-15 实测，观测来自 281 km 外的北京首都机场）：

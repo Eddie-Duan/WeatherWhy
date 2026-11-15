@@ -78,6 +78,21 @@ async def healthz() -> dict[str, Any]:
     }
 
 
+@router.get("/config")
+async def config() -> dict[str, Any]:
+    """前端需要的公开配置。
+
+    天地图 key 是**浏览器端** key（服务端请求会被判 403「请使用浏览器访问」），必须下发到前端；
+    它本来就会出现在网络请求里，不算机密，但只在本地 .env 维护一份。
+    """
+    settings = get_settings()
+    return {
+        "tianditu_key": settings.tianditu_key or None,
+        "map_approval_no": settings.map_approval_no or None,
+        "attribution": {"basemap": "天地图（已审图）", "clouds": "NASA GIBS"},
+    }
+
+
 @router.get("/fact_pack")
 async def fact_pack(
     place: str = Query(min_length=1), days: int = Query(default=7, ge=1, le=16)

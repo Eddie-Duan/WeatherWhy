@@ -368,6 +368,12 @@ table.forecast td:first-child {
   color: var(--text);
 }
 
+.approval {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;

@@ -99,6 +99,12 @@ export interface Answer {
   fallback_reason?: string;
 }
 
+export interface SiteConfig {
+  tianditu_key: string | null;
+  map_approval_no: string | null;
+  attribution: { basemap: string; clouds: string };
+}
+
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
 
 async function getJson<T>(path: string): Promise<T> {
@@ -118,6 +124,11 @@ async function getJson<T>(path: string): Promise<T> {
 
 export function fetchFactPack(place: string, days = 7): Promise<FactPack> {
   return getJson<FactPack>(`/api/fact_pack?place=${encodeURIComponent(place)}&days=${days}`);
+}
+
+/** 前端需要的公开配置：天地图 key（浏览器端 key，服务端请求会被拒）。 */
+export function fetchSiteConfig(): Promise<SiteConfig> {
+  return getJson<SiteConfig>("/api/config");
 }
 
 export async function fetchCharts(): Promise<Chart[]> {

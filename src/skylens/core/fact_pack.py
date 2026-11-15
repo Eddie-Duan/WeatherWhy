@@ -208,7 +208,7 @@ async def build_fact_pack(
             missing.append(f"天气图（{charts['error']}）")
         if "error" in enso:
             missing.append(f"ENSO 指数（{enso['error']}）")
-        missing.append("官方预警（需和风天气 key，M4 接入）")
+        missing.append("官方预警（需和风天气 key，尚未接入）")
         missing.append("h500 距平与气候态（需 data.cma.cn / ERA5，未实现）")
         notes.append("离散度为多模式 p10–p90（模式间），成员级 ensemble spread 待 M2 后续接入")
         if not observed.get("available") and observed.get("error"):

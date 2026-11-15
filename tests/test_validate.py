@@ -40,6 +40,15 @@ class TestResolveRef:
         assert ok is True
         assert value == 1.2
 
+    def test_dotted_index_is_also_accepted(self) -> None:
+        """模型常写 daily.0.temp_max，实测必须容忍，否则会白白降级。"""
+        ok, value = validate.resolve_ref(PACK, "forecast.daily.0.temp_max.mean")
+        assert ok is True
+        assert value == 1.2
+
+    def test_dotted_index_out_of_range(self) -> None:
+        assert validate.resolve_ref(PACK, "forecast.daily.7.temp_max.mean")[0] is False
+
     @pytest.mark.parametrize(
         "ref",
         ["observed.nope", "observed.temp_c.deeper", "forecast.daily[9]", "forecast.daily", "rh"],

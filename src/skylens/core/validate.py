@@ -11,11 +11,15 @@ from __future__ import annotations
 import re
 from typing import Any
 
-TOKEN_PATTERN = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)|\[(\d+)\]")
+TOKEN_PATTERN = re.compile(r"([A-Za-z_][A-Za-z0-9_]*|\d+)|\[(\d+)\]")
 
 
 def resolve_ref(pack: dict[str, Any], ref: str) -> tuple[bool, Any]:
-    """解析路径。返回 ``(是否取到值, 值)``，取不到时为 ``(False, None)``。"""
+    """解析路径。返回 ``(是否取到值, 值)``，取不到时为 ``(False, None)``。
+
+    两种下标写法都接受：``daily[1].temp_max`` 与 ``daily.1.temp_max``。
+    后者是模型（和很多人）的直觉写法，实测 DeepSeek 会混着用，强行只认一种等于自伤。
+    """
     if not isinstance(ref, str) or not ref:
         return False, None
 
@@ -26,15 +30,20 @@ def resolve_ref(pack: dict[str, Any], ref: str) -> tuple[bool, Any]:
         if gap.strip("."):  # 只允许 "." 作为分隔符，其他签名一律视为非法路径
             return False, None
         consumed = match.end()
-        key, index = match.group(1), match.group(2)
-        if key is not None:
-            if not isinstance(current, dict) or key not in current:
+        key, bracket_index = match.group(1), match.group(2)
+        if bracket_index is not None:
+            if not isinstance(current, list) or int(bracket_index) >= len(current):
                 return False, None
-            current = current[key]
-        else:
-            if not isinstance(current, list) or int(index) >= len(current):
+            current = current[int(bracket_index)]
+            continue
+        if key is not None and key.isdigit():
+            if not isinstance(current, list) or int(key) >= len(current):
                 return False, None
-            current = current[int(index)]
+            current = current[int(key)]
+            continue
+        if not isinstance(current, dict) or key not in current:
+            return False, None
+        current = current[key]
 
     if consumed != len(ref) or current is None:
         return False, None

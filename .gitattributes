@@ -1,0 +1,9 @@
+# 统一换行，避免 Windows 上 core.autocrlf 造成的整文件 diff 噪音
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.woff2 binary

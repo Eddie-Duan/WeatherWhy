@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "skylens"
+version = "0.1.0"
+description = "天镜 SkyLens · 多源天气事实包 + 可溯源成因解释（个人非商用）"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+authors = [{ name = "Eddie-Duan" }]
+keywords = ["weather", "forecast", "ensemble", "fact-pack", "llm"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+dependencies = [
+    "openai>=1.60",
+    "cyclopts>=4.4.4",
+    "rich>=13.9",
+    "numpy>=2.4.0",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.7",
+    "python-dotenv>=1.2.1",
+    "httpx>=0.28",
+    "tenacity>=9.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "orjson>=3.10",
+]
+
+[project.scripts]
+skylens = "skylens.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "respx>=0.22",
+    "ruff>=0.9",
+    "pre-commit>=4.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/skylens"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # 中文全角标点不当作歧义字符
+
+[tool.ruff.lint.isort]
+known-first-party = ["skylens"]

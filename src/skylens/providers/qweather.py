@@ -1,19 +1,22 @@
-"""和风天气：官方预警（**原文完整搬运**）与中文地名。
+"""和风天气：官方预警（**原文完整搬运**）。
 
-合规红线（26 号令第九条）：预警的 ``text`` 必须原样引用，不得改写、截断、合并；
-所以这里只做字段搬运与结构化，不加工文字。AI 的解读在解释层单独分栏输出。
+合规红线（26 号令第九条）：预警原文必须原样引用，不得改写、截断、合并；
+这里只做字段搬运与结构化，不加工文字。AI 的解读在解释层单独分栏输出。
 
 实测要点（2026-11-15）：
 
-- 新版控制台给每个账号分配独立 **API Host**（形如 ``xxx.re.qweatherapi.com``），
-  继续用 ``devapi.qweather.com`` 会被判 403 ``Invalid Host``；
-- 城市搜索路径是 ``/geo/v2/city/lookup``，预警是 ``/v7/warning/now``，都在同一个 host 下；
-- 业务状态码在响应体 ``code`` 里（``200`` 成功、``204`` 无数据、``401/402/403`` 密钥/额度/权限）。
+- 新版控制台给每个账号独立 **API Host**（形如 ``xxx.re.qweatherapi.com``），
+  旧的 ``devapi.qweather.com`` / ``api.qweather.com`` 会被判 403 ``Invalid Host``；
+- 旧版 ``/v7/warning/now`` 已废弃（实测返回 403 ``Deprecated``，官方说明 2026-09 停用），
+  新接口是 ``GET /weatheralert/v1/current/{lat}/{lon}``，仍是 ``?key=`` 鉴权（Bearer 会 401）；
+- 响应带 ``metadata.attributions``（「国家预警信息发布中心」），按条款必须与数据共同展示。
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -23,51 +26,76 @@ from skylens.providers import registry
 from skylens.settings import Settings
 
 GEO_PATH = "/geo/v2/city/lookup"
-WARNING_PATH = "/v7/warning/now"
+ALERT_PATH = "/weatheralert/v1/current"
 PUBLIC_POLICY = "官方原文原样传播：不得改写、不得截断、不得合并"
+SHANGHAI = ZoneInfo("Asia/Shanghai")
+
+# 预警颜色 → 中文等级（unflagged 的取原名）
+LEVEL_LABELS = {
+    "white": "白色",
+    "gray": "灰色",
+    "green": "绿色",
+    "blue": "蓝色",
+    "yellow": "黄色",
+    "amber": "琥珀色",
+    "orange": "橙色",
+    "red": "红色",
+    "purple": "紫色",
+    "black": "黑色",
+}
 
 
 def geo_url(settings: Settings) -> str:
     return f"{settings.qweather_base_url}{GEO_PATH}"
 
 
-def warning_url(settings: Settings) -> str:
-    return f"{settings.qweather_base_url}{WARNING_PATH}"
+def alert_url(settings: Settings, lat: float, lon: float) -> str:
+    """新预警接口把坐标放进路径（最多两位小数）。"""
+    return f"{settings.qweather_base_url}{ALERT_PATH}/{lat:.2f}/{lon:.2f}"
 
 
-def parse_warnings(payload: dict[str, Any], source_url: str) -> list[dict[str, Any]]:
-    """QWeather 预警 → fact_pack 的 warnings 数组。字段只搬运，不改写。"""
+# 兼容旧名字：早期代码里叫 warning_url
+warning_url = alert_url
+
+
+def to_shanghai(value: str | None) -> str | None:
+    """QWeather 预警时间给的是 UTC（``...Z``），统一转成 +08:00 再进 fact_pack。"""
+    if not value:
+        return None
+    try:
+        moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return value
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=ZoneInfo("UTC"))
+    return moment.astimezone(SHANGHAI).isoformat(timespec="seconds")
+
+
+def parse_alerts(payload: dict[str, Any], source_url: str) -> list[dict[str, Any]]:
+    """``alerts`` → fact_pack 的 warnings 数组。``description`` 一字不改。"""
+    attributions = (payload.get("metadata") or {}).get("attributions") or []
+    attribution = attributions[0] if attributions else None
     warnings: list[dict[str, Any]] = []
-    for item in payload.get("warning") or []:
+    for item in payload.get("alerts") or []:
+        color = (item.get("color") or {}).get("code")
         warnings.append(
             {
-                "title": item.get("title"),
-                "level": item.get("level"),
-                "type": item.get("typeName"),
-                "issuer": item.get("sender"),
-                "issued_at": item.get("pubTime"),
-                "start_time": item.get("startTime"),
-                "end_time": item.get("endTime"),
-                "status": item.get("status"),
-                "text": item.get("text"),  # 原文，禁止任何加工
+                "title": item.get("headline"),
+                "level": LEVEL_LABELS.get(str(color), color),
+                "type": (item.get("eventType") or {}).get("name"),
+                "issuer": item.get("senderName"),
+                "issued_at": to_shanghai(item.get("issuedTime")),
+                "start_time": to_shanghai(item.get("effectiveTime")),
+                "end_time": to_shanghai(item.get("expireTime")),
+                "status": (item.get("messageType") or {}).get("code"),
+                "text": item.get("description"),  # 原文，禁止任何加工
+                "advice": item.get("instruction"),
+                "attribution": attribution,
                 "source_url": source_url,
                 "policy": PUBLIC_POLICY,
             }
         )
     return warnings
-
-
-def _code_error(payload: dict[str, Any]) -> str | None:
-    code = str(payload.get("code", "")).strip()
-    if code in ("200", "204"):
-        return None
-    if code == "401":
-        return "401 无效的 API key"
-    if code == "402":
-        return "402 超过每日访问次数或余额不足"
-    if code == "403":
-        return "403 无访问权限（免费版可能不含预警接口）"
-    return f"code={code or '空'}"
 
 
 async def fetch_warnings(
@@ -88,12 +116,8 @@ async def fetch_warnings(
             "reason": "未配置 SKYLENS_QWEATHER_KEY",
         }
 
-    url = warning_url(settings)
-    params = {
-        "location": f"{round(lon, 2)},{round(lat, 2)}",
-        "key": settings.qweather_key.get_secret_value(),
-        "lang": "zh",
-    }
+    url = alert_url(settings, lat, lon)
+    params = {"key": settings.qweather_key.get_secret_value(), "lang": "zh"}
     source_url = str(httpx.Request("GET", url, params={**params, "key": "<redacted>"}).url)
 
     own_client = client is None
@@ -116,23 +140,15 @@ async def fetch_warnings(
                     "error": f"HTTP {resp.status_code} {detail}".strip(),
                     "source_url": source_url,
                 }
-            payload = resp.json() if resp.content else {"code": "204"}
+            payload = resp.json() if resp.content else {}
             cache_set(cache, key, payload)
 
-        error = _code_error(payload)
-        if error is not None:
-            return {
-                "provider": "qweather",
-                "available": False,
-                "warnings": [],
-                "error": error,
-                "source_url": source_url,
-            }
-        warnings = parse_warnings(payload, source_url)
+        warnings = parse_alerts(payload, source_url)
         return {
             "provider": "qweather",
             "available": True,
             "warnings": warnings,
+            "attribution": (payload.get("metadata") or {}).get("attributions") or [],
             "source_url": source_url,
             "policy": PUBLIC_POLICY,
         }

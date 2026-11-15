@@ -77,7 +77,18 @@ export interface FactPack {
     season: string;
     enso: { phase: string; oni: number | null; month: string; source: string } | null;
   } | null;
-  warnings: Array<{ title: string; text: string }>;
+  warnings: Array<{
+    title: string;
+    level?: string | null;
+    type?: string | null;
+    issuer?: string | null;
+    issued_at?: string | null;
+    status?: string | null;
+    text: string;
+    advice?: string | null;
+    attribution?: string | null;
+    policy?: string;
+  }>;
   provenance: {
     providers: Array<{ name: string; ok: boolean; latency_ms: number; error?: string }>;
     missing: string[];

@@ -84,6 +84,23 @@ export function renderFact(container: HTMLElement, pack: FactPack): void {
 
   const pattern = synoptic?.pattern;
   const missing = pack.provenance.missing ?? [];
+  const warnings = pack.warnings ?? [];
+
+  const warningsBlock = warnings.length
+    ? `<div class="section-title"><span class="tag" style="color: var(--danger)">预警</span>
+         官方原文 ${warnings.length} 条（禁止改写，以下为原文）</div>
+       ${warnings
+         .map(
+           (item) => `<div class="warn degraded">
+            <strong>${esc(item.title)}</strong>
+            <span class="muted small">｜${esc(item.issuer)} · ${esc(item.issued_at)}</span>
+            <p>${esc(item.text)}</p>
+            ${item.advice ? `<p class="muted small">防御指南：${esc(item.advice)}</p>` : ""}
+            ${item.attribution ? `<p class="muted small">来源：${esc(item.attribution)}</p>` : ""}
+          </div>`,
+         )
+         .join("")}`
+    : "";
 
   container.innerHTML = `
     <h2>事实包</h2>
@@ -93,6 +110,7 @@ export function renderFact(container: HTMLElement, pack: FactPack): void {
       <dt>海拔</dt><dd>${num(location.elevation_m, "m", 0)}</dd>
     </div>
     <p class="muted small">fact_pack_id ${esc(pack.fact_pack_id)}<br />生成于 ${esc(pack.generated_at)}</p>
+    ${warningsBlock}
     ${observedBody}
     <div class="section-title"><span class="tag forecast">预报</span>多模式 ${
       forecast?.models.length ?? 0

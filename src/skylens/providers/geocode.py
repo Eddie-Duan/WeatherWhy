@@ -1,12 +1,14 @@
-"""中文地名优先的地理编码：和风天气 GeoAPI → Nominatim → Open-Meteo。
+"""中文地名优先的地理编码：Nominatim → 和风天气 GeoAPI → Open-Meteo。
 
-**实测结论（2026-11-15）**：Open-Meteo geocoding 对「明安图镇」「正镶白旗」这类
-旗县级中文地名**返回空结果**，对本项目基本不可用；Nominatim 反而能精确命中
-（``明安图镇 → 42.2984, 115.0014, 正镶白旗/锡林郭勒盟/内蒙古自治区``）。
-因此这里把 Nominatim 放在 Open-Meteo 前面，与 ``docs/MIGRATION.md`` §2.3 的建议顺序不同，
-理由是实测可用性，而不是偏好。
+**实测结论（2026-11-15，两个源都拿真实 key/请求验过）**：
 
-所有候选都返回（``limit`` 提到 5），不做「只取第一条」的静默猜测。
+- Open-Meteo geocoding 对「明安图镇」「正镶白旗」这类旗县级中文地名**返回空**，基本不可用；
+- 和风 GeoAPI 的城市库只到县级：``明安图镇`` 会被匹配成**吉林安图**（43.11, 128.90），
+  但 ``正镶白旗``、``锡林浩特`` 这类县级/市级名称很准；
+- Nominatim 能精确命中镇级：``明安图镇 → 42.2984, 115.0014（正镶白旗/锡林郭勒盟/内蒙古）``。
+
+所以顺序是 Nominatim → 和风 → Open-Meteo，与 ``docs/MIGRATION.md`` §2.3 的建议不同，
+理由是实测可用性而不是偏好。所有候选都返回（``limit`` 5），不做「只取第一条」的静默猜测。
 """
 
 from __future__ import annotations
@@ -129,7 +131,26 @@ async def geocode(
         candidates: list[dict[str, Any]] = []
         source = ""
 
-        if settings.qweather_key is not None:
+        # 1) Nominatim 优先：实测对镇/旗级中文地名最准
+        #    （「明安图镇」→ 42.2984, 115.0014；和风城市库只到县级，会把「明安图镇」匹配到吉林安图）
+        params = {
+            "q": query,
+            "format": "jsonv2",
+            "limit": 5,
+            "accept-language": "zh",
+            "addressdetails": 1,
+        }
+        key = make_key(registry.NOMINATIM_SEARCH, params)
+        payload = cache_get(cache, key, registry.TTLS.geocode)
+        if payload is None:
+            resp = await client.get(registry.NOMINATIM_SEARCH, params=params)
+            payload = resp.json() if resp.status_code == 200 else []
+            cache_set(cache, key, payload)
+        if payload:
+            candidates, source = _from_nominatim(payload, query), "nominatim"
+
+        # 2) 和风 GeoAPI：地名与行政区命名更"官方"，也是后续站号/预警的入口
+        if not candidates and settings.qweather_key is not None:
             url = qweather.geo_url(settings)
             params = {
                 "location": query,
@@ -145,23 +166,6 @@ async def geocode(
                 cache_set(cache, key, payload)
             if payload.get("location"):
                 candidates, source = _from_qweather(payload, query), "qweather"
-
-        if not candidates:
-            params = {
-                "q": query,
-                "format": "jsonv2",
-                "limit": 5,
-                "accept-language": "zh",
-                "addressdetails": 1,
-            }
-            key = make_key(registry.NOMINATIM_SEARCH, params)
-            payload = cache_get(cache, key, registry.TTLS.geocode)
-            if payload is None:
-                resp = await client.get(registry.NOMINATIM_SEARCH, params=params)
-                payload = resp.json() if resp.status_code == 200 else []
-                cache_set(cache, key, payload)
-            if payload:
-                candidates, source = _from_nominatim(payload, query), "nominatim"
 
         if not candidates:
             params = {"name": query, "count": 5, "language": "zh", "format": "json"}

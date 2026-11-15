@@ -76,8 +76,10 @@ class TestNominatimFirst:
         assert result["elevation_m"] == 1013.0
 
     @respx.mock
-    async def test_qweather_wins_when_key_configured(self) -> None:
+    async def test_qweather_is_fallback_not_primary(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """实测：和风把「明安图镇」匹配成吉林安图，所以只有 Nominatim 没结果时才用它。"""
         settings = _settings(qweather_key="k", qweather_api_host="demo.re.qweatherapi.com")
+        respx.get(registry.NOMINATIM_SEARCH).mock(return_value=httpx.Response(200, json=[]))
         respx.get(qweather.geo_url(settings)).mock(
             return_value=httpx.Response(
                 200,
@@ -85,9 +87,9 @@ class TestNominatimFirst:
                     "code": "200",
                     "location": [
                         {
-                            "name": "明安图",
-                            "lat": "42.29",
-                            "lon": "114.99",
+                            "name": "正镶白旗",
+                            "lat": "42.28681",
+                            "lon": "115.03143",
                             "adm1": "内蒙古自治区",
                             "adm2": "锡林郭勒盟",
                         }
@@ -95,10 +97,21 @@ class TestNominatimFirst:
                 },
             )
         )
-        result = await geocode.geocode("明安图镇", settings=settings)
+        result = await geocode.geocode("正镶白旗", settings=settings)
 
         assert result["geocode_source"] == "qweather"
-        assert result["admin"] == "内蒙古自治区 锡林郭勒盟 明安图"
+        assert result["admin"] == "内蒙古自治区 锡林郭勒盟 正镶白旗"
+
+    @respx.mock
+    async def test_nominatim_beats_qweather_for_towns(self) -> None:
+        settings = _settings(qweather_key="k", qweather_api_host="demo.re.qweatherapi.com")
+        respx.get(registry.NOMINATIM_SEARCH).mock(
+            return_value=httpx.Response(200, json=NOMINATIM_HITS)
+        )
+        result = await geocode.geocode("明安图镇", settings=settings)
+
+        assert result["geocode_source"] == "nominatim"
+        assert result["lat"] == pytest.approx(42.2984)
 
     @respx.mock
     async def test_no_result_returns_error_dict(self) -> None:

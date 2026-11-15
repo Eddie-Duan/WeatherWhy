@@ -215,10 +215,11 @@ cd web && npm run dev      # http://localhost:5173
 
 | 项 | 文档说法 | 实测（2026-11-15） | 处理 |
 |---|---|---|---|
-| 中文地名源顺序 | QWeather 主、Open-Meteo 备、Nominatim 兜底 | Open-Meteo geocoding 对「明安图镇 / 正镶白旗」**返回空**；Nominatim 精确命中（42.2984, 115.0014，正镶白旗） | 顺序改为 QWeather → **Nominatim** → Open-Meteo，理由写进模块文档 |
+| 中文地名源顺序 | QWeather 主、Open-Meteo 备、Nominatim 兜底 | Open-Meteo 对「明安图镇/正镶白旗」**返回空**；和风城市库只到县级，把「明安图镇」匹配成**吉林安图**（43.11, 128.90）；Nominatim 精确命中（42.2984, 115.0014） | 顺序改为 **Nominatim → 和风 → Open-Meteo**，三家都实测过 |
 | 离散度来源 | ensemble 成员级 spread | M2 仍是 4 个模式逐日 p10–p90（模式间离散度） | `forecast.agreement` 已可用；成员级 ensemble 待接入，契约不变 |
 | METAR 最近站 | 站点表或 stationinfo | `bbox` 查询最省事；锡林浩特 ZBXH 当时无报，最近可用站是 281 km 外的 ZBAA | bbox 逐级放大（4°→8°），代表性落成「低」并写进 fact_pack |
 | 解释层 `max_tokens` | 2000 | 2000 时真实回答被截断（`finish_reason=length`，JSON 断在 4134 字符） | 默认提到 3000 + 截断检测 + 重试时要求「精简、facts ≤ 6 条」 |
+| 和风预警接口 | 文档写 `/v7/warning/now` | 该接口已废弃（实测 403 `Deprecated`，官方说明 2026-09 停用）；新接口 `GET /weatheralert/v1/current/{lat}/{lon}`，仍用 `?key=`（Bearer 会 401） | 已切到新接口；预警原文与 `metadata.attributions`（国家预警信息发布中心）一起展示 |
 | 和风天气端点 | 文档写 `devapi.qweather.com` 与 `geoapi` | 新版控制台给每个账号独立 **API Host**，旧 host 一律 403 `Invalid Host`；城市搜索改到 `/geo/v2/city/lookup`，预警在 `/v7/warning/now` | 新增 `SKYLENS_QWEATHER_API_HOST`，URL 由它拼出；`doctor` 会直接报 `Invalid Host` |
 | 引用路径写法 | 文档写 `daily[0].temp_max` | DeepSeek 实际写 `daily.1.precip_mm.mean`（点号下标），浏览器端因此降级过一次 | 解析器同时接受 `[1]` 与 `.1` 两种下标写法，仍然只认 fact_pack 里真实存在的路径 |
 | 模型名 | `deepseek-chat` | 服务端返回的实际模型是 `deepseek-flash` | 配置不变（用官方别名），`doctor` 会打印真实模型名 |

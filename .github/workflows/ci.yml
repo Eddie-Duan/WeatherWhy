@@ -20,3 +20,5 @@ jobs:
         run: uv run ruff format --check .
       - name: pytest
         run: uv run pytest
+      - name: regression (offline replay, no LLM)
+        run: uv run python scripts/run_regression.py --offline

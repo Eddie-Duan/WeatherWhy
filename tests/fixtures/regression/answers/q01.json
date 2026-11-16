@@ -1,0 +1,116 @@
+{
+  "id": "q01",
+  "place": "明安图镇",
+  "question": "明安图镇现在的天气怎么样？",
+  "pack_id": "sha256:85b2f006316b9799f344bf28cc4fbc03",
+  "answer": {
+    "headline": "明安图镇当前格点实况阴、气温约-7.3℃、体感约-15℃，锡林郭勒盟与正镶白旗气象台道路结冰黄色预警、内蒙古自治区气象台寒潮蓝色预警均在生效中，未来两天气温继续走低。",
+    "facts": [
+      {
+        "label": "格点实况气温（和风天气，非站点观测）",
+        "value": "-7.25℃",
+        "ref": "observed.local.temp_c"
+      },
+      {
+        "label": "格点实况体感温度（自算，和风天气给出）",
+        "value": "-14.96℃",
+        "ref": "observed.local.feels_like_c"
+      },
+      {
+        "label": "格点实况天气现象",
+        "value": "阴（weather_code 104）",
+        "ref": "observed.local.weather_text"
+      },
+      {
+        "label": "格点实况相对湿度",
+        "value": "87%",
+        "ref": "observed.local.rh_pct"
+      },
+      {
+        "label": "格点实况风",
+        "value": "271°、8.21 m/s，阵风 12.61 m/s",
+        "ref": "observed.local.wind_speed_ms"
+      },
+      {
+        "label": "最近可用站点观测（ZBAA，距 281 km，代表性低）",
+        "value": "8.0℃、露点-4.0℃、RH 42%、海平面气压 1025.0 hPa、南风 2.1 m/s",
+        "ref": "observed.temp_c"
+      },
+      {
+        "label": "海拔订正后气温（推断，自算：8.0℃ − 6.5℃/km × 1.314 km）",
+        "value": "-0.5℃（原始观测 8.0℃）",
+        "ref": "observed.temp_adjusted.temp_c"
+      },
+      {
+        "label": "850hPa 温度",
+        "value": "-7.2℃",
+        "ref": "synoptic.t850_c"
+      },
+      {
+        "label": "850hPa 风",
+        "value": "283°、8.7 m/s",
+        "ref": "synoptic.wind850_dir_deg"
+      },
+      {
+        "label": "500hPa 位势高度",
+        "value": "5495 m",
+        "ref": "synoptic.h500_geopotential_m"
+      },
+      {
+        "label": "11-17 日最高气温多模式均值（p10–p90）",
+        "value": "-2.33℃（-3.21 至 -1.66）",
+        "ref": "forecast.daily[1].temp_max.mean"
+      },
+      {
+        "label": "11-18 日最低气温多模式均值（p10–p90）",
+        "value": "-14.55℃（-15.34 至 -13.6）",
+        "ref": "forecast.daily[2].temp_min.mean"
+      },
+      {
+        "label": "11-16 日降水量多模式均值（p10–p90）",
+        "value": "8.47 mm（7.25 至 9.6）",
+        "ref": "forecast.daily[0].precip_mm.mean"
+      },
+      {
+        "label": "多模式气温一致性",
+        "value": "最高气温中（spread 4.59）、最低气温中（spread 5.85）",
+        "ref": "forecast.agreement.temperature_max.level"
+      },
+      {
+        "label": "ENSO 状态",
+        "value": "El Niño，ONI 2.46（2026-09）",
+        "ref": "climate.enso.phase"
+      }
+    ],
+    "observed": "观测的代表性局限：距明安图镇最近的可用站点是 Beijing Intl, BJ, CN（ZBAA），281 km，代表性等级为低，不能代表当地局地实况。该站 15:30 观测气温 8.0℃、露点 -4.0℃、相对湿度 42%、海平面气压 1025.0 hPa、南风 2.1 m/s、能见度 9656 m，3 小时气压变化 -1.0 hPa；近 24 小时该站序列气温变化 -2.0℃、气压变化 +1.0 hPa、风向变化 0°。按标准大气递减率自算的海拔订正（推断）为 -0.5℃，原始观测为 8.0℃，仅修正海拔差、未修正水平距离与局地效应，不可替代观测。本地为和风天气格点实况（非站点观测），16:00 气温 -7.25℃、体感 -14.96℃、露点 -9.1℃、相对湿度 87%、海平面气压 1027.03 hPa、西风 8.21 m/s、阵风 12.61 m/s、能见度 16030 m、云量 100%、无降水、天气“阴”。两者差异主要来自 281 km 水平距离与 1314 m 海拔差。",
+    "forecast": "四模式（ecmwf_ifs025、gfs_seamless、icon_seamless、gem_global）显示：11-16 最高气温均值 -1.9℃（p10–p90 -2.44 至 -1.4）、最低 -8.35℃（-8.98 至 -7.56）、降水 8.47 mm（7.25 至 9.6）、最大风速 8.11 m/s；11-17 最高 -2.33℃、最低 -9.57℃、降水 2.55 mm、最大风速 9.48 m/s；11-18 最高 -8.2℃、最低 -14.55℃、降水 1.27 mm、最大风速 9.77 m/s；11-19 最高 -8.85℃、最低 -12.4℃；11-20 最高 -8.43℃、最低 -12.82℃；11-21 最高 -6.03℃、最低 -15.82℃、降水 0.0 mm；11-22 最高 -1.97℃、最低 -13.22℃、降水 0.0 mm。多模式离散度：最高气温 spread 最大 4.59（11-21）、最低气温 spread 最大 5.85（11-22）、降水 spread 最大 2.35（11-16）、风速 spread 最大 4.13（11-20），总体一致性等级均为中。",
+    "inference": {
+      "text": "500hPa 位势高度 5495 m 配合 850hPa 偏西风 283°/8.7 m/s、850hPa 温度 -7.2℃，呈平直西风、偏西气流的环流形态（该形态标签本身为推断）；在此背景下，本地格点实况气温 -7.25℃、体感 -14.96℃ 与 850hPa 温度量级相衔接，且多模式一致给出 11-18 前后最低气温降至 -14.55℃ 左右，与内蒙古自治区气象台寒潮蓝色预警所述“锡林郭勒盟西部最低气温下降 8℃以上、18 日早晨降至零下 17℃至零下 8℃”方向一致。最不确定的一环是：本地缺乏代表性站点观测，环流诊断与本地实况之间只能靠格点实况衔接，且 h500 距平缺失，无法定量判断冷空气强度异常程度。",
+      "confidence": "低",
+      "basis": [
+        "synoptic.h500_geopotential_m",
+        "synoptic.wind850_dir_deg",
+        "synoptic.wind850_speed_ms",
+        "synoptic.t850_c",
+        "observed.local.temp_c",
+        "observed.local.feels_like_c",
+        "forecast.daily[2].temp_min.mean",
+        "warnings[2].text"
+      ]
+    },
+    "uncertainty": "最不确定的是本地实况的代表性：最近站点距 281 km、海拔差 1314 m，代表性等级为低，海拔订正值（推断）与格点实况相差约 6.8℃，两者都不能直接当作明安图镇观测；此外 h500 距平与气候态缺失，无法判断环流异常幅度，多模式在 11-21 至 11-22 的 spread 明显增大（最高 4.59、最低 5.85），后期预报不确定性偏高。",
+    "advice": "正镶白旗气象台 2026-11-16 09:44 发布的道路结冰黄色预警仍在生效（原文：正镶白旗气象台2026年11月16日09时40分继续发布2026年11月15日21时48分发布的道路结冰黄色预警信号：12小时内正镶白旗仍有对交通有影响的道路结冰。请有关单位和人员做好防范准备。），出行注意路面结冰、减速慢行，行人尽量少骑自行车；内蒙古自治区气象台 2026-11-16 09:09 发布的寒潮蓝色预警（原文：内蒙古自治区气象台2026年11月16日09时20分发布寒潮蓝色预警信号：48小时内阿拉善盟南部、巴彦淖尔市南部、乌海市、鄂尔多斯市、包头市南部、呼和浩特市、乌兰察布市南部、锡林郭勒盟西部最低气温将要下降8℃以上，18日早晨上述地区最低气温将降至零下17℃至零下8℃。请有关单位和人员做好防范准备。）提示未来两天显著降温，请提前添衣保暖并做好防风准备；格点实况体感约 -15℃、阵风 12.61 m/s，户外活动注意防风防冻。",
+    "not_covered": [
+      "h500 距平与气候态（需 data.cma.cn / ERA5，未实现）"
+    ],
+    "citations": [
+      "https://aviationweather.gov/api/data/metar?bbox=38.298%2C111.001%2C46.298%2C119.001&format=json&hours=24",
+      "https://hv6422dn48.re.qweatherapi.com/weather/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh",
+      "https://api.open-meteo.com/v1/forecast?latitude=42.2984&longitude=115.0014&hourly=geopotential_height_500hPa%2Ctemperature_500hPa%2Ctemperature_850hPa%2Cwind_speed_850hPa%2Cwind_direction_850hPa&timezone=Asia%2FShanghai&past_days=1&forecast_days=2&temperature_unit=celsius&wind_speed_unit=ms",
+      "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
+      "https://hv6422dn48.re.qweatherapi.com/weatheralert/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh",
+      "https://developer.qweather.com/attribution.html"
+    ],
+    "degraded": false
+  }
+}

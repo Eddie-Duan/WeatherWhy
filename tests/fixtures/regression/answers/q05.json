@@ -1,0 +1,121 @@
+{
+  "id": "q05",
+  "place": "锡林浩特",
+  "question": "锡林浩特现在的天气及其成因？",
+  "pack_id": "sha256:4b6ae8e98b792897cc66b51105e32c18",
+  "answer": {
+    "headline": "锡林浩特阴天、格点实况气温约-3.6℃、体感约-10.5℃；锡林郭勒盟气象台与锡林浩特市气象台均已发布道路结冰黄色预警，锡林浩特市气象台另发布暴雪黄色预警，需注意道路积雪结冰与吹雪。",
+    "facts": [
+      {
+        "label": "格点实况（非站点观测）气温",
+        "value": "-3.64 ℃",
+        "ref": "observed.local.temp_c"
+      },
+      {
+        "label": "格点实况体感温度（自算，和风天气按格点要素计算）",
+        "value": "-10.46 ℃",
+        "ref": "observed.local.feels_like_c"
+      },
+      {
+        "label": "格点实况天气现象",
+        "value": "阴（weather_code 104）",
+        "ref": "observed.local.weather_text"
+      },
+      {
+        "label": "格点实况相对湿度",
+        "value": "83 %",
+        "ref": "observed.local.rh_pct"
+      },
+      {
+        "label": "格点实况风",
+        "value": "190° / 7.3 m/s，阵风 11.41 m/s",
+        "ref": "observed.local.wind_speed_ms"
+      },
+      {
+        "label": "最近可用 METAR 站点",
+        "value": "ZBAA（Beijing Intl），距 432 km，海拔 31 m，代表性低",
+        "ref": "observed.station.distance_km"
+      },
+      {
+        "label": "METAR 观测气温（原始值）",
+        "value": "8.0 ℃",
+        "ref": "observed.temp_c"
+      },
+      {
+        "label": "按标准递减率海拔订正后的气温（推断，自算；原始观测 8.0 ℃）",
+        "value": "1.7 ℃",
+        "ref": "observed.temp_adjusted.temp_c"
+      },
+      {
+        "label": "500hPa 位势高度",
+        "value": "5467 m",
+        "ref": "synoptic.h500_geopotential_m"
+      },
+      {
+        "label": "850hPa 气温",
+        "value": "-6.3 ℃",
+        "ref": "synoptic.t850_c"
+      },
+      {
+        "label": "850hPa 风",
+        "value": "153° / 3.6 m/s",
+        "ref": "synoptic.wind850_dir_deg"
+      },
+      {
+        "label": "11-16 多模式日最高气温均值（p10–p90）",
+        "value": "-2.2 ℃（-3.25 ~ -1.31）",
+        "ref": "forecast.daily[0].temp_max.mean"
+      },
+      {
+        "label": "11-16 多模式降水量均值（p10–p90）",
+        "value": "6.4 mm（5.92 ~ 6.96）",
+        "ref": "forecast.daily[0].precip_mm.mean"
+      },
+      {
+        "label": "11-17 多模式日最低气温均值（p10–p90）",
+        "value": "-11.08 ℃（-11.96 ~ -10.17）",
+        "ref": "forecast.daily[1].temp_min.mean"
+      },
+      {
+        "label": "11-18 多模式最大风速均值（p10–p90）",
+        "value": "8.45 m/s（7.55 ~ 9.45）",
+        "ref": "forecast.daily[2].wind_max_ms.mean"
+      },
+      {
+        "label": "温度预报模式间一致性",
+        "value": "中（日最高 spread 4.16 ℃，日最低 spread 6.24 ℃）",
+        "ref": "forecast.agreement.temperature_max.level"
+      }
+    ],
+    "observed": "观测的代表性存在局限：距锡林浩特最近的可用站点是 Beijing Intl, BJ, CN（ZBAA），432 km，不能代表当地局地实况。该站 15:30 观测气温 8.0 ℃、露点 -4.0 ℃、相对湿度 42 %、海平面气压 1025.0 hPa、风 160° 2.1 m/s、能见度 9656 m、无云层报告；近 24 h 气温变化 -2.0 ℃、气压变化 +1.0 hPa、风向变化 0°。按标准大气温度递减率把该站气温订正到锡林浩特海拔（Δh 962 m，6.5 ℃/km）得 1.7 ℃，此为推断（自算），原始观测仍为 8.0 ℃，且未修正水平距离差异与局地效应。本地格点实况（非站点观测，和风天气 current，16:00）为气温 -3.64 ℃、体感 -10.46 ℃、露点 -6.13 ℃、相对湿度 83 %、海平面气压 1021.75 hPa、风 190° 7.3 m/s、阵风 11.41 m/s、能见度 10530 m、云量 100 %、降水 0.0 mm、天气“阴”。两者差异主要来自 432 km 水平距离与 962 m 海拔差，METAR 站点值不能代表锡林浩特本地。",
+    "forecast": "四模式（ecmwf_ifs025、gfs_seamless、icon_seamless、gem_global）显示：11-16 日最高气温均值 -2.2 ℃（p10–p90 为 -3.25 ~ -1.31，spread 1.94），日最低 -7.7 ℃（spread 2.08），降水 6.4 mm（spread 1.04），最大风速 5.59 m/s（spread 1.36）；11-17 日最高 -3.25 ℃、最低 -11.08 ℃、降水 1.35 mm、最大风速 6.71 m/s；11-18 日最高 -5.95 ℃、最低 -13.42 ℃、降水 0.25 mm、最大风速 8.45 m/s；11-19 至 11-22 气温维持低位，11-21 日最低 -16.57 ℃，11-22 日温度离散度最大（日最高 spread 4.16、日最低 spread 6.24）。模式间一致性总体为“中”：温度、降水、风的 p10–p90 离散度分别为 4.16/6.24 ℃、1.5 mm、3.03 m/s。",
+    "inference": {
+      "text": "500hPa 位势高度 5467 m 配合 850hPa 东南气流（153°/3.6 m/s）与 850hPa 气温 -6.3 ℃，构成“500hPa 平直西风、850hPa 东南气流”的环流形势（该形势标签本身为推断）；在此背景下，偏南低层水汽输送与低温配合，与本地格点实况“阴、湿度 83 %、降水 0.0 mm”以及多模式 11-16 降水均值 6.4 mm 的方向一致，也与锡林浩特市气象台暴雪黄色预警所述降雪量将达 6 毫米以上相呼应。最不确定的一环是低层水汽输送强度与实际降雪落区/相态：850hPa 风速仅 3.6 m/s，水汽通量与抬升条件难以由现有要素定量判断，且本地无站点观测可校验。",
+      "confidence": "中",
+      "basis": [
+        "synoptic.h500_geopotential_m",
+        "synoptic.wind850_dir_deg",
+        "synoptic.wind850_speed_ms",
+        "synoptic.t850_c",
+        "synoptic.pattern.label",
+        "observed.local.rh_pct",
+        "observed.local.precip_mm",
+        "forecast.daily[0].precip_mm.mean"
+      ]
+    },
+    "uncertainty": "最不确定的是降水相态与量级：本地只有格点实况（降水 0.0 mm）而无站点观测校验，最近 METAR 站点在 432 km 外、代表性低；多模式 11-16 降水 p10–p90 为 5.92 ~ 6.96 mm，但 11-17 降水 spread 达 1.5 mm，且 11-21 至 11-22 温度离散度升至 4.16/6.24 ℃，模式对降温幅度与降雪起止时间分歧较大。此外 h500 距平与气候态缺失，无法定量判断环流异常程度。",
+    "advice": "1）锡林郭勒盟气象台 2026-11-16 09:53 发布、锡林浩特市气象台 2026-11-16 08:15 发布的道路结冰黄色预警仍在生效，出行请减速慢行、避免急刹，行人少骑自行车并注意防滑。2）锡林浩特市气象台 2026-11-16 07:06 发布暴雪黄色预警，牧区请提前备足饲料、加固棚架等易被雪压的临时搭建物，交通、电力、通信部门加强线路巡查。3）格点实况体感约 -10.5 ℃（自算），外出注意防风保暖，重点保护手部与面部。4）野外有吹雪，能见度可能骤降，驾车尽量避免长途夜间出行。",
+    "not_covered": [
+      "h500 距平与气候态（需 data.cma.cn / ERA5，未实现）"
+    ],
+    "citations": [
+      "https://aviationweather.gov/api/data/metar?bbox=39.944%2C112.092%2C47.944%2C120.092&format=json&hours=24",
+      "https://hv6422dn48.re.qweatherapi.com/weather/v1/current/43.94/116.09?key=%3Credacted%3E&lang=zh",
+      "https://api.open-meteo.com/v1/forecast?latitude=43.9443&longitude=116.0919&hourly=geopotential_height_500hPa%2Ctemperature_500hPa%2Ctemperature_850hPa%2Cwind_speed_850hPa%2Cwind_direction_850hPa&timezone=Asia%2FShanghai&past_days=1&forecast_days=2&temperature_unit=celsius&wind_speed_unit=ms",
+      "https://hv6422dn48.re.qweatherapi.com/weatheralert/v1/current/43.94/116.09?key=%3Credacted%3E&lang=zh",
+      "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
+      "https://developer.qweather.com/attribution.html"
+    ],
+    "degraded": false
+  }
+}

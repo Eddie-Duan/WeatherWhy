@@ -1,0 +1,577 @@
+{
+  "schema_version": "1.0",
+  "fact_pack_id": "sha256:85b2f006316b9799f344bf28cc4fbc03",
+  "generated_at": "2026-11-16T16:03:21+08:00",
+  "location": {
+    "query": "明安图镇",
+    "name": "明安图镇",
+    "admin": "内蒙古自治区 正镶白旗",
+    "lat": 42.2984,
+    "lon": 115.0014,
+    "elevation_m": 1345.0,
+    "timezone": "Asia/Shanghai",
+    "geocode_source": "nominatim",
+    "geocode_confidence": 0.85,
+    "geocode_candidates": [
+      {
+        "name": "明安图镇",
+        "admin": "内蒙古自治区 正镶白旗",
+        "lat": 42.2984,
+        "lon": 115.0014,
+        "elevation_m": null,
+        "score": 0.85
+      },
+      {
+        "name": "明安图镇",
+        "admin": "内蒙古自治区 正镶白旗",
+        "lat": 42.3282,
+        "lon": 114.9359,
+        "elevation_m": null,
+        "score": 0.78
+      }
+    ]
+  },
+  "observed": {
+    "available": true,
+    "station": {
+      "id": "ZBAA",
+      "name": "Beijing Intl, BJ, CN",
+      "distance_km": 281,
+      "elevation_m": 31
+    },
+    "valid_time": "2026-11-16T15:30:00+08:00",
+    "age_minutes": 33,
+    "temp_c": 8.0,
+    "dewpoint_c": -4.0,
+    "rh_pct": 42.0,
+    "pressure_msl_hpa": 1025.0,
+    "wind_dir_deg": 160.0,
+    "wind_gust_ms": null,
+    "wind_speed_ms": 2.1,
+    "cloud_layers": [],
+    "visibility_m": 9656,
+    "weather_code": null,
+    "raw": "METAR ZBAA 160730Z 16002MPS CAVOK 08/M04 Q1025 NOSIG",
+    "source": "METAR ZBAA",
+    "source_url": "https://aviationweather.gov/api/data/metar?bbox=38.298%2C111.001%2C46.298%2C119.001&format=json&hours=24",
+    "representativeness": {
+      "level": "低",
+      "reason": "距明安图镇最近的可用站点是 Beijing Intl, BJ, CN（ZBAA），281 km，不能代表当地局地实况"
+    },
+    "pressure_trend_3h_hpa": -1.0,
+    "temp_adjusted": {
+      "temp_c": -0.5,
+      "observed_station_temp_c": 8.0,
+      "elevation_delta_m": 1314.0,
+      "lapse_rate_c_per_km": 6.5,
+      "method": "标准大气温度递减率",
+      "formula": "T_site = T_station − 6.5 °C/km × Δh",
+      "confidence": "推断（自算）",
+      "caveats": [
+        "只修正海拔差，未修正站点与目标地的水平距离差异",
+        "未考虑逆温、辐射降温、山谷冷池等局地效应",
+        "不可替代观测，也不构成预报结论"
+      ]
+    },
+    "local": {
+      "available": true,
+      "kind": "格点实况（非站点观测）",
+      "valid_time": "2026-11-16T16:00:00+08:00",
+      "temp_c": -7.25,
+      "feels_like_c": -14.96,
+      "dewpoint_c": -9.1,
+      "rh_pct": 87,
+      "pressure_msl_hpa": 1027.03,
+      "wind_dir_deg": 271,
+      "wind_speed_ms": 8.21,
+      "wind_gust_ms": 12.61,
+      "visibility_m": 16030.0,
+      "cloud_cover_pct": 100,
+      "precip_mm": 0.0,
+      "precip_type": "none",
+      "weather_text": "阴",
+      "weather_code": "104",
+      "attribution": [
+        "https://developer.qweather.com/attribution.html"
+      ],
+      "source": "和风天气 current（格点实况）",
+      "source_url": "https://hv6422dn48.re.qweatherapi.com/weather/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh"
+    }
+  },
+  "trend_24h": {
+    "basis": "METAR ZBAA 近 24h 序列（48 条报）",
+    "temp_change_c": -2.0,
+    "pressure_change_hpa": 1.0,
+    "wind_dir_change_deg": 0.0
+  },
+  "forecast": {
+    "models": [
+      "ecmwf_ifs025",
+      "gfs_seamless",
+      "icon_seamless",
+      "gem_global"
+    ],
+    "elevation_m": 1345.0,
+    "daily": [
+      {
+        "date": "2026-11-16",
+        "temp_max": {
+          "mean": -1.9,
+          "p10": -2.44,
+          "p90": -1.4,
+          "spread": 1.04
+        },
+        "temp_min": {
+          "mean": -8.35,
+          "p10": -8.98,
+          "p90": -7.56,
+          "spread": 1.42
+        },
+        "precip_mm": {
+          "mean": 8.47,
+          "p10": 7.25,
+          "p90": 9.6,
+          "spread": 2.35
+        },
+        "wind_max_ms": {
+          "mean": 8.11,
+          "p10": 7.6,
+          "p90": 8.58,
+          "spread": 0.98
+        }
+      },
+      {
+        "date": "2026-11-17",
+        "temp_max": {
+          "mean": -2.33,
+          "p10": -3.21,
+          "p90": -1.66,
+          "spread": 1.55
+        },
+        "temp_min": {
+          "mean": -9.57,
+          "p10": -10.38,
+          "p90": -8.71,
+          "spread": 1.67
+        },
+        "precip_mm": {
+          "mean": 2.55,
+          "p10": 1.88,
+          "p90": 3.14,
+          "spread": 1.26
+        },
+        "wind_max_ms": {
+          "mean": 9.48,
+          "p10": 8.68,
+          "p90": 10.24,
+          "spread": 1.56
+        }
+      },
+      {
+        "date": "2026-11-18",
+        "temp_max": {
+          "mean": -8.2,
+          "p10": -8.74,
+          "p90": -7.38,
+          "spread": 1.36
+        },
+        "temp_min": {
+          "mean": -14.55,
+          "p10": -15.34,
+          "p90": -13.6,
+          "spread": 1.74
+        },
+        "precip_mm": {
+          "mean": 1.27,
+          "p10": 0.76,
+          "p90": 1.81,
+          "spread": 1.05
+        },
+        "wind_max_ms": {
+          "mean": 9.77,
+          "p10": 9.09,
+          "p90": 10.32,
+          "spread": 1.23
+        }
+      },
+      {
+        "date": "2026-11-19",
+        "temp_max": {
+          "mean": -8.85,
+          "p10": -9.97,
+          "p90": -7.57,
+          "spread": 2.4
+        },
+        "temp_min": {
+          "mean": -12.4,
+          "p10": -12.91,
+          "p90": -11.81,
+          "spread": 1.1
+        },
+        "precip_mm": {
+          "mean": 0.62,
+          "p10": 0.0,
+          "p90": 1.39,
+          "spread": 1.39
+        },
+        "wind_max_ms": {
+          "mean": 10.02,
+          "p10": 9.2,
+          "p90": 10.83,
+          "spread": 1.63
+        }
+      },
+      {
+        "date": "2026-11-20",
+        "temp_max": {
+          "mean": -8.43,
+          "p10": -9.91,
+          "p90": -7.4,
+          "spread": 2.51
+        },
+        "temp_min": {
+          "mean": -12.82,
+          "p10": -13.6,
+          "p90": -12.03,
+          "spread": 1.57
+        },
+        "precip_mm": {
+          "mean": 1.18,
+          "p10": 0.33,
+          "p90": 1.92,
+          "spread": 1.59
+        },
+        "wind_max_ms": {
+          "mean": 8.38,
+          "p10": 6.3,
+          "p90": 10.43,
+          "spread": 4.13
+        }
+      },
+      {
+        "date": "2026-11-21",
+        "temp_max": {
+          "mean": -6.03,
+          "p10": -8.61,
+          "p90": -4.02,
+          "spread": 4.59
+        },
+        "temp_min": {
+          "mean": -15.82,
+          "p10": -17.68,
+          "p90": -13.79,
+          "spread": 3.89
+        },
+        "precip_mm": {
+          "mean": 0.0,
+          "p10": 0.0,
+          "p90": 0.0,
+          "spread": 0.0
+        },
+        "wind_max_ms": {
+          "mean": 3.84,
+          "p10": 3.39,
+          "p90": 4.35,
+          "spread": 0.96
+        }
+      },
+      {
+        "date": "2026-11-22",
+        "temp_max": {
+          "mean": -1.97,
+          "p10": -3.7,
+          "p90": -0.59,
+          "spread": 3.11
+        },
+        "temp_min": {
+          "mean": -13.22,
+          "p10": -15.94,
+          "p90": -10.09,
+          "spread": 5.85
+        },
+        "precip_mm": {
+          "mean": 0.0,
+          "p10": 0.0,
+          "p90": 0.0,
+          "spread": 0.0
+        },
+        "wind_max_ms": {
+          "mean": 6.46,
+          "p10": 4.84,
+          "p90": 8.38,
+          "spread": 3.53
+        }
+      }
+    ],
+    "agreement": {
+      "temperature_max": {
+        "level": "中",
+        "spread": 4.59,
+        "basis": "Open-Meteo 多模式（4 个）逐日 p10–p90"
+      },
+      "temperature_min": {
+        "level": "中",
+        "spread": 5.85,
+        "basis": "Open-Meteo 多模式（4 个）逐日 p10–p90"
+      },
+      "precipitation": {
+        "level": "中",
+        "spread": 2.35,
+        "basis": "Open-Meteo 多模式（4 个）逐日 p10–p90"
+      },
+      "wind": {
+        "level": "中",
+        "spread": 4.13,
+        "basis": "Open-Meteo 多模式（4 个）逐日 p10–p90"
+      }
+    }
+  },
+  "synoptic": {
+    "h500_geopotential_m": 5495.0,
+    "h500_anomaly_m": null,
+    "t500_c": -26.8,
+    "t850_c": -7.2,
+    "wind850_dir_deg": 283.0,
+    "wind850_speed_ms": 8.7,
+    "valid_time": "2026-11-16T16:00+08:00",
+    "source": "Open-Meteo pressure-level",
+    "source_url": "https://api.open-meteo.com/v1/forecast?latitude=42.2984&longitude=115.0014&hourly=geopotential_height_500hPa%2Ctemperature_500hPa%2Ctemperature_850hPa%2Cwind_speed_850hPa%2Cwind_direction_850hPa&timezone=Asia%2FShanghai&past_days=1&forecast_days=2&temperature_unit=celsius&wind_speed_unit=ms",
+    "charts": [
+      {
+        "title": "JMA 亚洲地面天气图（实况）",
+        "url": "https://www.jma.go.jp/bosai/weather_map/data/png/20261116023401_0_Z__C_010000_20261116000000_MET_CHT_JCIasas_JCP600x512_JRcolor_Tjmahp_image.png",
+        "valid_time": "2026-11-16T08:00:00+08:00",
+        "license": "JMA 政府標準利用規約（転載時は出典明記）",
+        "kind": "地面天气图"
+      },
+      {
+        "title": "JMA 亚洲地面天气图（24 小时予想）",
+        "url": "https://www.jma.go.jp/bosai/weather_map/data/png/20261116053230_0_Z__C_010000_20261116000000_MET_CHT_JCIfsas24_JCP600x512_JRcolor_Tjmahp_image.png",
+        "valid_time": "2026-11-16T08:00:00+08:00",
+        "license": "JMA 政府標準利用規約（転載時は出典明記）",
+        "kind": "预报天气图"
+      },
+      {
+        "title": "JMA 亚洲地面天气图（48 小时予想）",
+        "url": "https://www.jma.go.jp/bosai/weather_map/data/png/20261115205200_0_Z__C_010000_20261115120000_MET_CHT_JCIfsas48_JCP600x512_JRcolor_Tjmahp_image.png",
+        "valid_time": "2026-11-15T20:00:00+08:00",
+        "license": "JMA 政府標準利用規約（転載時は出典明記）",
+        "kind": "预报天气图"
+      },
+      {
+        "title": "中央气象台 地面天气图",
+        "url": "http://www.nmc.cn/publish/observations/china/dm/weatherchart-dm.htm",
+        "valid_time": null,
+        "license": "中央气象台公开产品（注明来源并外链）",
+        "kind": "高空/地面天气图"
+      },
+      {
+        "title": "中央气象台 500hPa 高度场",
+        "url": "http://www.nmc.cn/publish/observations/china/dm/weatherchart-h500.htm",
+        "valid_time": null,
+        "license": "中央气象台公开产品（注明来源并外链）",
+        "kind": "高空/地面天气图"
+      },
+      {
+        "title": "中央气象台 850hPa 高度场",
+        "url": "http://www.nmc.cn/publish/observations/china/dm/weatherchart-h850.htm",
+        "valid_time": null,
+        "license": "中央气象台公开产品（注明来源并外链）",
+        "kind": "高空/地面天气图"
+      }
+    ],
+    "pattern": {
+      "label": "500hPa 平直西风，850hPa 偏西气流",
+      "confidence": "推断",
+      "basis": [
+        "synoptic.h500_geopotential_m",
+        "synoptic.wind850_dir_deg",
+        "synoptic.t850_c",
+        "synoptic.wind850_speed_ms"
+      ]
+    }
+  },
+  "climate": {
+    "season": "初冬",
+    "enso": {
+      "phase": "El Niño",
+      "oni": 2.46,
+      "month": "2026-09",
+      "source": "NOAA CPC ONI",
+      "source_url": "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
+    },
+    "climate_normal": null
+  },
+  "derived": {
+    "wind_chill_c": {
+      "value": 6.8,
+      "unit": "°C",
+      "method": "风寒指数（体感温度）",
+      "formula": "13.12 + 0.6215T − 11.37V^0.16 + 0.3965T·V^0.16（T 为 °C，V 为 km/h）",
+      "basis": [
+        "observed.temp_c",
+        "observed.wind_speed_ms"
+      ],
+      "confidence": "推断（自算）",
+      "caveats": [
+        "仅适用于气温 ≤10 °C、风速 ≥4.8 km/h 的情形",
+        "未考虑湿度与日照；有风时体感低于气温",
+        "是换算值，不是观测记录，也不是预报"
+      ],
+      "wind_kmh": 7.6
+    },
+    "dewpoint_depression_c": {
+      "value": 12.0,
+      "unit": "°C",
+      "method": "露点差",
+      "formula": "T − Td",
+      "label": "干燥",
+      "basis": [
+        "observed.temp_c",
+        "observed.dewpoint_c"
+      ],
+      "confidence": "推断（自算）",
+      "caveats": [
+        "露点差只反映近地面湿度，不代表云底高度"
+      ]
+    },
+    "pressure_tendency": {
+      "value": -1.0,
+      "unit": "hPa/3h",
+      "method": "3 小时变压倾向",
+      "formula": "P(t) − P(t−3h)",
+      "label": "气压变化不大",
+      "basis": [
+        "observed.pressure_trend_3h_hpa"
+      ],
+      "confidence": "推断（自算）",
+      "caveats": [
+        "单站变压只说明局地气压变化，不等于天气系统移动速度"
+      ]
+    },
+    "thickness_850_500": {
+      "value": 4.9,
+      "unit": "°C/km",
+      "method": "静力学厚度反算 + 850–500hPa 递减率",
+      "formula": "ΔZ = R·Tv/g·ln(850/500)；Γ = (T850 − T500)/ΔZ",
+      "thickness_500_850_m": 3979.0,
+      "h850_estimated_m": 1516.0,
+      "h500_observed_m": 5495.0,
+      "mean_virtual_temp_k": 256.1,
+      "stability": "层结较稳定",
+      "basis": [
+        "synoptic.h500_geopotential_m",
+        "synoptic.t850_c",
+        "synoptic.t500_c"
+      ],
+      "confidence": "推断（自算）",
+      "caveats": [
+        "平均虚温用 (T850+T500)/2 近似，未计水汽与逆温层",
+        "h850 是反算值，若有探空/模式 850hPa 高度应以其为准",
+        "递减率只代表 850–500hPa 这一层，不代表整层大气"
+      ]
+    }
+  },
+  "derived_note": "本块为项目自行计算的推断值（非观测、非官方预报）；每项含 method/formula/caveats",
+  "warnings": [
+    {
+      "title": "锡林郭勒盟气象台发布道路结冰黄色预警",
+      "level": "黄色",
+      "type": "道路结冰",
+      "issuer": "锡林郭勒盟气象台",
+      "issued_at": "2026-11-16T09:53:00+08:00",
+      "start_time": "2026-11-16T09:55:00+08:00",
+      "end_time": "2026-11-17T09:53:00+08:00",
+      "status": "alert",
+      "text": "锡林郭勒盟气象台2026年11月16日09时38分发布道路结冰黄色预警信号：12小时内锡林郭勒盟仍有对交通有影响的道路积雪或结冰。请有关单位和人员做好防范准备。",
+      "advice": "1.交通、公安等部门要按照职责做好道路结冰应对准备工作；\n2.驾驶人员应当注意路况，安全行驶；\n3.行人外出尽量少骑自行车，注意防滑。",
+      "attribution": "国家预警信息发布中心",
+      "source_url": "https://hv6422dn48.re.qweatherapi.com/weatheralert/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh",
+      "policy": "官方原文原样传播：不得改写、不得截断、不得合并"
+    },
+    {
+      "title": "正镶白旗气象台发布道路结冰黄色预警",
+      "level": "黄色",
+      "type": "道路结冰",
+      "issuer": "正镶白旗气象台",
+      "issued_at": "2026-11-16T09:44:00+08:00",
+      "start_time": "2026-11-16T09:47:00+08:00",
+      "end_time": "2026-11-17T09:44:00+08:00",
+      "status": "update",
+      "text": "正镶白旗气象台2026年11月16日09时40分继续发布2026年11月15日21时48分发布的道路结冰黄色预警信号：12小时内正镶白旗仍有对交通有影响的道路结冰。请有关单位和人员做好防范准备。",
+      "advice": "1.交通、公安等部门要按照职责做好道路结冰应对准备工作；\n2.驾驶人员应当注意路况，安全行驶；\n3.行人外出尽量少骑自行车，注意防滑。",
+      "attribution": "国家预警信息发布中心",
+      "source_url": "https://hv6422dn48.re.qweatherapi.com/weatheralert/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh",
+      "policy": "官方原文原样传播：不得改写、不得截断、不得合并"
+    },
+    {
+      "title": "内蒙古自治区气象台发布寒潮蓝色预警",
+      "level": "蓝色",
+      "type": "寒潮",
+      "issuer": "内蒙古自治区气象台",
+      "issued_at": "2026-11-16T09:09:00+08:00",
+      "start_time": "2026-11-16T09:13:00+08:00",
+      "end_time": "2026-11-17T09:09:00+08:00",
+      "status": "alert",
+      "text": "内蒙古自治区气象台2026年11月16日09时20分发布寒潮蓝色预警信号：48小时内阿拉善盟南部、巴彦淖尔市南部、乌海市、鄂尔多斯市、包头市南部、呼和浩特市、乌兰察布市南部、锡林郭勒盟西部最低气温将要下降8℃以上，18日早晨上述地区最低气温将降至零下17℃至零下8℃。请有关单位和人员做好防范准备。",
+      "advice": "1.政府及有关部门按照职责做好防寒潮准备工作；\n2.注意添衣保暖；\n3.做好防风准备工作。",
+      "attribution": "国家预警信息发布中心",
+      "source_url": "https://hv6422dn48.re.qweatherapi.com/weatheralert/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh",
+      "policy": "官方原文原样传播：不得改写、不得截断、不得合并"
+    }
+  ],
+  "provenance": {
+    "providers": [
+      {
+        "name": "geocode",
+        "ok": true,
+        "latency_ms": 0
+      },
+      {
+        "name": "open_meteo",
+        "ok": true,
+        "latency_ms": 2
+      },
+      {
+        "name": "metar",
+        "ok": true,
+        "latency_ms": 1
+      },
+      {
+        "name": "open_meteo_pressure",
+        "ok": true,
+        "latency_ms": 0
+      },
+      {
+        "name": "charts",
+        "ok": true,
+        "latency_ms": 0
+      },
+      {
+        "name": "enso",
+        "ok": true,
+        "latency_ms": 2
+      },
+      {
+        "name": "qweather",
+        "ok": true,
+        "latency_ms": 0
+      },
+      {
+        "name": "qweather_current",
+        "ok": true,
+        "latency_ms": 11
+      }
+    ],
+    "missing": [
+      "h500 距平与气候态（需 data.cma.cn / ERA5，未实现）"
+    ],
+    "notes": [
+      "海拔取自 Open-Meteo 格点（地理编码源未提供）",
+      "观测气温已按标准递减率订正到站点海拔（标注为推断，不替换原始观测）",
+      "离散度为多模式 p10–p90（模式间），成员级 ensemble spread 待 M2 后续接入",
+      "derived 为本项目按公式自算的推断值（每项都带 method/formula/caveats）",
+      "observed.local 为和风格点实况（非站点观测），与机场 METAR 需分开解读"
+    ]
+  }
+}

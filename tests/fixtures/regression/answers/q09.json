@@ -1,0 +1,69 @@
+{
+  "id": "q09",
+  "place": "明安图镇",
+  "question": "明安图镇有没有正在生效的官方预警？原文怎么说？",
+  "pack_id": "sha256:85b2f006316b9799f344bf28cc4fbc03",
+  "answer": {
+    "headline": "明安图镇阴天、格点实况约-7℃，锡林郭勒盟与正镶白旗气象台均发布道路结冰黄色预警，需防滑防寒",
+    "facts": [
+      {
+        "label": "格点实况气温（和风天气，非站点观测）",
+        "value": "-7.25 ℃",
+        "ref": "observed.local.temp_c"
+      },
+      {
+        "label": "格点实况体感温度（自算，和风天气给出）",
+        "value": "-14.96 ℃",
+        "ref": "observed.local.feels_like_c"
+      },
+      {
+        "label": "格点实况风（偏西，8.21 m/s，阵风12.61 m/s）",
+        "value": "271° / 8.21 m/s / 阵风12.61 m/s",
+        "ref": "observed.local.wind_speed_ms"
+      },
+      {
+        "label": "机场METAR观测气温（ZBAA，距281 km，代表性低）",
+        "value": "8.0 ℃",
+        "ref": "observed.temp_c"
+      },
+      {
+        "label": "海拔订正后气温（推断，自算：8.0−6.5×1.314）",
+        "value": "-0.5 ℃",
+        "ref": "observed.temp_adjusted.temp_c"
+      },
+      {
+        "label": "500hPa高度/850hPa温度与风",
+        "value": "5495 m / -7.2 ℃ / 283° 8.7 m/s",
+        "ref": "synoptic.h500_geopotential_m"
+      }
+    ],
+    "observed": "观测的代表性局限：距明安图镇最近的可用站点为 Beijing Intl（ZBAA），281 km，代表性等级低，不能代表当地局地实况。该站15:30气温8.0 ℃、露点-4.0 ℃、相对湿度42%、海平面气压1025.0 hPa、风160° 2.1 m/s、能见度9656 m，3小时气压变化-1.0 hPa；近24小时气温变化-2.0 ℃、气压变化+1.0 hPa、风向变化0°。按标准大气递减率自算的海拔订正气温为-0.5 ℃（推断，原始观测8.0 ℃，海拔差1314 m，递减率6.5 ℃/km），仅修正海拔差，未修正水平距离与局地效应。和风天气格点实况（非站点观测，16:00）为阴，气温-7.25 ℃、体感-14.96 ℃、露点-9.1 ℃、相对湿度87%、气压1027.03 hPa、风271° 8.21 m/s、阵风12.61 m/s、能见度16030 m、云量100%、降水0.0 mm。两者差异主要来自281 km水平距离与1314 m海拔差。",
+    "forecast": "四模式（ecmwf_ifs025、gfs_seamless、icon_seamless、gem_global）逐日显示：16日最高气温均值-1.9 ℃（p10–p90 -2.44至-1.4，离散1.04）、最低-8.35 ℃（离散1.42）、降水8.47 mm（离散2.35）、最大风8.11 m/s；17日最高-2.33 ℃、最低-9.57 ℃、降水2.55 mm、风9.48 m/s；18日最高-8.2 ℃、最低-14.55 ℃、降水1.27 mm、风9.77 m/s；19日最高-8.85 ℃、最低-12.4 ℃；20日最高-8.43 ℃、最低-12.82 ℃；21日最高-6.03 ℃、最低-15.82 ℃、降水0.0 mm；22日最高-1.97 ℃、最低-13.22 ℃、降水0.0 mm。多模式一致性：最高气温中（离散4.59）、最低气温中（5.85）、降水中（2.35）、风中（4.13），均为p10–p90模式间离散度。",
+    "inference": {
+      "text": "500hPa高度5495 m、850hPa温度-7.2 ℃并伴283°偏西风8.7 m/s，配合格点实况阴天与近饱和相对湿度（87%），指向平直西风背景下冷空气与偏西气流维持，利于低温与道路结冰持续；最不确定的一环是机场METAR距目标地281 km、海拔差1314 m，其观测对本地代表性低，海拔订正值仅为推断，无法约束局地逆温与山谷冷池。",
+      "confidence": "低",
+      "basis": [
+        "synoptic.h500_geopotential_m",
+        "synoptic.t850_c",
+        "synoptic.wind850_dir_deg",
+        "synoptic.wind850_speed_ms",
+        "observed.local.rh_pct",
+        "observed.temp_adjusted.temp_c",
+        "observed.representativeness.level"
+      ]
+    },
+    "uncertainty": "最不确定的是本地实况约束：唯一站点观测距281 km、海拔差1314 m，代表性低；格点实况与订正值分属不同来源，且未考虑逆温与冷池，21–22日最高气温模式间离散达4.59–5.85 ℃。",
+    "advice": "锡林郭勒盟气象台2026年11月16日09时53分发布道路结冰黄色预警、正镶白旗气象台2026年11月16日09时44分发布道路结冰黄色预警、内蒙古自治区气象台2026年11月16日09时09分发布寒潮蓝色预警：出行注意路面结冰，驾车减速慢行、行人少骑自行车防滑；按体感-14.96 ℃级别添衣保暖并做好防风准备。",
+    "not_covered": [
+      "h500 距平与气候态（需 data.cma.cn / ERA5，未实现）"
+    ],
+    "citations": [
+      "https://aviationweather.gov/api/data/metar?bbox=38.298%2C111.001%2C46.298%2C119.001&format=json&hours=24",
+      "https://hv6422dn48.re.qweatherapi.com/weather/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh",
+      "https://api.open-meteo.com/v1/forecast?latitude=42.2984&longitude=115.0014&hourly=geopotential_height_500hPa%2Ctemperature_500hPa%2Ctemperature_850hPa%2Cwind_speed_850hPa%2Cwind_direction_850hPa&timezone=Asia%2FShanghai&past_days=1&forecast_days=2&temperature_unit=celsius&wind_speed_unit=ms",
+      "https://hv6422dn48.re.qweatherapi.com/weatheralert/v1/current/42.30/115.00?key=%3Credacted%3E&lang=zh",
+      "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
+    ],
+    "degraded": false
+  }
+}

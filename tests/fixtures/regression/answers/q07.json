@@ -1,0 +1,131 @@
+{
+  "id": "q07",
+  "place": "二连浩特",
+  "question": "二连浩特现在的天气怎么样？",
+  "pack_id": "sha256:25febf47a667e729f21eeed3b725a541",
+  "answer": {
+    "headline": "二连浩特当前为格点实况阴天、气温约-3.8℃，锡林郭勒盟气象台已发布暴雪黄色与道路结冰黄色预警、内蒙古自治区气象台已发布寒潮蓝色预警，未来两日气温走低且多模式对最低气温分歧较大。",
+    "facts": [
+      {
+        "label": "格点实况气温（和风，非站点观测）",
+        "value": "-3.83℃",
+        "ref": "observed.local.temp_c"
+      },
+      {
+        "label": "格点实况体感温度（和风）",
+        "value": "-7.85℃",
+        "ref": "observed.local.feels_like_c"
+      },
+      {
+        "label": "格点实况天气现象",
+        "value": "阴",
+        "ref": "observed.local.weather_text"
+      },
+      {
+        "label": "格点实况相对湿度",
+        "value": "73%",
+        "ref": "observed.local.rh_pct"
+      },
+      {
+        "label": "格点实况风",
+        "value": "311° / 2.83 m/s，阵风 4.69 m/s",
+        "ref": "observed.local.wind_speed_ms"
+      },
+      {
+        "label": "最近机场站点气温（ZBHH，310 km）",
+        "value": "0.0℃",
+        "ref": "observed.temp_c"
+      },
+      {
+        "label": "机场站点代表性",
+        "value": "低（距 310 km，不能代表当地局地实况）",
+        "ref": "observed.representativeness.level"
+      },
+      {
+        "label": "24h 气温变化（ZBHH 序列）",
+        "value": "-5.0℃",
+        "ref": "trend_24h.temp_change_c"
+      },
+      {
+        "label": "500hPa 位势高度",
+        "value": "5474 m",
+        "ref": "synoptic.h500_geopotential_m"
+      },
+      {
+        "label": "850hPa 温度",
+        "value": "-8.2℃",
+        "ref": "synoptic.t850_c"
+      },
+      {
+        "label": "850hPa 风",
+        "value": "305° / 3.1 m/s",
+        "ref": "synoptic.wind850_speed_ms"
+      },
+      {
+        "label": "11-16 模式日最高气温均值",
+        "value": "-2.23℃（p10 -2.84 ~ p90 -1.63）",
+        "ref": "forecast.daily[0].temp_max.mean"
+      },
+      {
+        "label": "11-17 模式日最低气温均值",
+        "value": "-10.03℃（p10 -11.12 ~ p90 -8.55）",
+        "ref": "forecast.daily[1].temp_min.mean"
+      },
+      {
+        "label": "11-18 模式日最低气温均值",
+        "value": "-11.85℃（p10 -13.37 ~ p90 -9.77）",
+        "ref": "forecast.daily[2].temp_min.mean"
+      },
+      {
+        "label": "最低气温模式一致性",
+        "value": "低（spread 10.9）",
+        "ref": "forecast.agreement.temperature_min.level"
+      },
+      {
+        "label": "暴雪黄色预警（锡林郭勒盟气象台 2026-11-16T06:39 发布）",
+        "value": "锡林郭勒盟气象台2026年11月16日06时34分发布暴雪黄色预警信号：12小时内锡林浩特市、西乌珠穆沁旗西南部、阿巴嘎旗南部、苏尼特左旗大部、二连浩特市、苏尼特右旗大部、正蓝旗、多伦县降雪量将达6毫米以上，野外伴有吹雪，对交通运输、城市运行和牧业生产有影响。请有关单位和人员做好防范准备。",
+        "ref": "warnings[2].text"
+      },
+      {
+        "label": "道路结冰黄色预警（锡林郭勒盟气象台 2026-11-16T09:53 发布）",
+        "value": "锡林郭勒盟气象台2026年11月16日09时38分发布道路结冰黄色预警信号：12小时内锡林郭勒盟仍有对交通有影响的道路积雪或结冰。请有关单位和人员做好防范准备。",
+        "ref": "warnings[0].text"
+      },
+      {
+        "label": "寒潮蓝色预警（内蒙古自治区气象台 2026-11-16T09:09 发布）",
+        "value": "内蒙古自治区气象台2026年11月16日09时20分发布寒潮蓝色预警信号：48小时内阿拉善盟南部、巴彦淖尔市南部、乌海市、鄂尔多斯市、包头市南部、呼和浩特市、乌兰察布市南部、锡林郭勒盟西部最低气温将要下降8℃以上，18日早晨上述地区最低气温将降至零下17℃至零下8℃。请有关单位和人员做好防范准备。",
+        "ref": "warnings[1].text"
+      }
+    ],
+    "observed": "观测的代表性存在局限：距二连浩特市最近的可用站点是 Hohhot/Baita Intl, NM, CN（ZBHH），310 km，不能代表当地局地实况。该站点 15:00 观测气温 0.0℃、露点 -5.0℃、相对湿度 69%、海平面气压 1021.0 hPa、风 350° 2.1 m/s、云量 SCT 云底 914 m、能见度 9656 m，3 小时气压变化 0.0 hPa；近 24 小时该站序列气温变化 -5.0℃、气压变化 +4.0 hPa、风向变化 -70°。本地格点实况（和风天气 current，格点实况、非站点观测）16:00 显示气温 -3.83℃、体感 -7.85℃、露点 -8.02℃、相对湿度 73%、海平面气压 1027.04 hPa、风 311° 2.83 m/s 阵风 4.69 m/s、能见度 27280 m、云量 100%、降水 0.0 mm、天气现象“阴”。两者差异主要来自 310 km 距离与约 112 m 海拔差（ZBHH 1081 m 对二连浩特 969 m），机场站点数值不宜直接当作本地实况。",
+    "forecast": "四模式（ecmwf_ifs025、gfs_seamless、icon_seamless、gem_global）逐日显示：11-16 日最高气温均值 -2.23℃（p10 -2.84 ~ p90 -1.63，spread 1.21）、最低 -6.33℃（spread 1.91）、降水均值 3.43 mm（spread 1.07）、最大风速均值 7.03 m/s；11-17 日最高 -1.77℃、最低 -10.03℃（spread 2.57）、降水 2.55 mm（spread 2.14）；11-18 日最高 -4.62℃、最低 -11.85℃（spread 3.6）、降水 0.03 mm；11-19 日至 11-22 日降水均值均为 0.0 mm，最高气温由 -4.5℃ 回升至 -0.38℃，最低气温 -11.15℃ 至 -13.55℃。多模式一致性：日最高气温“中”（spread 4.23）、日最低气温“低”（spread 10.9）、降水“中”（spread 2.14）、风速“中”（spread 3.56），即最低气温的模式离散度最大。",
+    "inference": {
+      "text": "成因推断：500hPa 位势高度 5474 m 配合 850hPa 西北风 305°、3.1 m/s 与 850hPa 温度 -8.2℃，构成“500hPa 平直西风、850hPa 西北气流”的环流背景，有利于冷空气南下与降雪维持，并与锡林郭勒盟气象台发布的暴雪黄色预警、道路结冰黄色预警及内蒙古自治区气象台发布的寒潮蓝色预警所描述的情形方向一致。最不确定的一环是本地气温与降水的具体落区量级：本地仅有格点实况、最近站点远在 310 km，且模式最低气温离散度达 10.9，无法据此确定局地降雪量与最低气温的具体数值。",
+      "confidence": "低",
+      "basis": [
+        "synoptic.h500_geopotential_m",
+        "synoptic.wind850_dir_deg",
+        "synoptic.wind850_speed_ms",
+        "synoptic.t850_c",
+        "synoptic.pattern.label",
+        "observed.local.temp_c",
+        "observed.representativeness.level",
+        "forecast.agreement.temperature_min.spread"
+      ]
+    },
+    "uncertainty": "最不确定的是本地最低气温与降雪量级：本地无站点观测，最近 METAR 站点距 310 km 且代表性为“低”，格点实况与站点观测存在明显差异；同时四模式日最低气温 p10–p90 离散度达 10.9（一致性“低”），11-20 至 11-22 日最低气温 spread 进一步升至 7.23–10.9，具体数值不宜按单点采信。",
+    "advice": "关注锡林郭勒盟气象台 2026-11-16T06:39 发布的暴雪黄色预警、2026-11-16T09:53 发布的道路结冰黄色预警，以及内蒙古自治区气象台 2026-11-16T09:09 发布的寒潮蓝色预警；出行注意道路积雪结冰、减速慢行，行人防滑并减少骑行；牧区备足饲料、加固棚架；气温走低，注意添衣保暖与防风。",
+    "not_covered": [
+      "h500 距平与气候态（需 data.cma.cn / ERA5，未实现）"
+    ],
+    "citations": [
+      "https://aviationweather.gov/api/data/metar?bbox=39.641%2C107.944%2C47.641%2C115.944&format=json&hours=24",
+      "https://hv6422dn48.re.qweatherapi.com/weather/v1/current/43.64/111.94?key=%3Credacted%3E&lang=zh",
+      "https://api.open-meteo.com/v1/forecast?latitude=43.6408&longitude=111.9435&hourly=geopotential_height_500hPa%2Ctemperature_500hPa%2Ctemperature_850hPa%2Cwind_speed_850hPa%2Cwind_direction_850hPa&timezone=Asia%2FShanghai&past_days=1&forecast_days=2&temperature_unit=celsius&wind_speed_unit=ms",
+      "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
+      "https://hv6422dn48.re.qweatherapi.com/weatheralert/v1/current/43.64/111.94?key=%3Credacted%3E&lang=zh",
+      "https://developer.qweather.com/attribution.html"
+    ],
+    "degraded": false
+  }
+}

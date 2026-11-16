@@ -13,6 +13,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from collections.abc import AsyncIterator
@@ -25,6 +26,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from skylens import __version__
+from skylens.core.archive import save_pack
 from skylens.core.explain import explain as explain_pack
 from skylens.core.fact_pack import build_fact_pack
 from skylens.providers.charts import fetch_charts
@@ -56,6 +58,8 @@ async def get_pack(place: str, days: int) -> dict[str, Any]:
     pack = await build_fact_pack(place, days=days)
     if "error" not in pack:
         _PACK_CACHE[key] = (now, pack)
+        with contextlib.suppress(Exception):  # 快照失败不影响请求
+            save_pack(pack)
     return pack
 
 

@@ -10,6 +10,7 @@ M1：``where``（地理编码候选）、``pack``（打印 fact_pack）。
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from pathlib import Path
 from typing import Annotated
@@ -20,6 +21,7 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from skylens import __version__
+from skylens.core import archive
 from skylens.core.explain import explain as explain_pack
 from skylens.core.fact_pack import build_fact_pack
 from skylens.doctor import all_critical_ok, run_checks
@@ -130,6 +132,7 @@ def pack(
 ) -> None:
     """组装并打印 fact_pack（确定性，不走 LLM）。"""
     pack_data = asyncio.run(build_fact_pack(place, days=days))
+    _archive_quietly(pack_data)
     if "error" in pack_data:
         console.print(f"[red]fact_pack 生成失败[/red]：{pack_data['error']}")
         if pack_data.get("detail"):
@@ -157,6 +160,7 @@ def explain(
 
     async def _run() -> tuple[dict, dict | None]:
         pack_data = await build_fact_pack(place, days=days, settings=settings)
+        _archive_quietly(pack_data)
         if "error" in pack_data:
             return pack_data, None
         return pack_data, await explain_pack(pack_data, settings=settings)
@@ -170,6 +174,51 @@ def explain(
         console.print_json(json.dumps(answer, ensure_ascii=False))
         return
     _print_answer(answer, pack_data)
+
+
+@app.command
+def packs(limit: Annotated[int, Parameter(name=["--limit"])] = 20) -> None:
+    """列出已存档的 fact_pack 快照（用于复盘与回归样本）。"""
+    items = archive.list_packs()[:limit]
+    if not items:
+        console.print("[dim]还没有快照；跑一次 `skylens pack` 就会留下。[/dim]")
+        return
+    table = Table(title="fact_pack 快照", header_style="bold")
+    for column in ("id", "地点", "生成时间", "大小"):
+        table.add_column(column)
+    for item in items:
+        table.add_row(
+            str(item["fact_pack_id"])[:20],
+            str(item["place"]),
+            str(item["generated_at"]),
+            f"{item['size_bytes'] / 1024:.0f} KB",
+        )
+    console.print(table)
+
+
+@app.command
+def replay(
+    fact_pack_id: str,
+    explain: Annotated[bool, Parameter(name=["--explain"], help="用这份快照重新生成解释")] = False,
+) -> None:
+    """载入存档的 fact_pack（不重新取数），可再跑一次解释层做对比。"""
+    try:
+        pack = archive.load_pack(fact_pack_id)
+    except FileNotFoundError:
+        console.print(f"[red]找不到快照[/red] {fact_pack_id}（先跑 `skylens packs` 看有哪些）")
+        raise SystemExit(1) from None
+    _print_pack(pack)
+    if explain:
+        answer = asyncio.run(explain_pack(pack, settings=get_settings()))
+        _print_answer(answer, pack)
+
+
+def _archive_quietly(pack: dict) -> None:
+    """快照是尽力而为：失败就跳过，绝不因此让请求失败。"""
+    if "error" in pack:
+        return
+    with contextlib.suppress(Exception):
+        archive.save_pack(pack)
 
 
 @app.command

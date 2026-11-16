@@ -26,6 +26,10 @@
 - **事实与解释分离**：`fact_pack` 由确定性 Python 代码组装，不经 LLM；LLM 只负责把已有事实写成人话。
 - **每个数字带 provenance**：`{value, unit, source, source_url, valid_time, fetched_at}` 是数据的最小单元。
 - **三层信息强制区分**：观测（observed）/ 预报（forecast）/ 推断（inference），UI 配色不同。
+- **观测分层**：本地格点实况（和风 current，就在目标坐标上）与机场站点观测（METAR，可能几百公里外）
+  分开展示，后者必须标注距离与代表性。
+- **自算数值单列**：体感温度、850hPa 反算高度、850–500hPa 递减率、3 小时变压倾向都标「自算」，
+  每项带公式与局限，绝不与观测/预报混同。
 - **多模式离散度**：用 Open-Meteo ensemble 的成员级数据算真实 spread，而不是拿几个模式均值假装一致。
 - **官方文案只搬运不改写**：预警原文完整并列展示，AI 只做「这是什么意思、我该怎么办」的解读。
 
@@ -162,7 +166,7 @@ cd web && npm run dev      # http://localhost:5173
 | **M3** ✅ | explain 层 + 模板降级 + 引用校验 | `facts[].ref` 全部可在 fact_pack 中解析 |
 | **M4** ✅ | FastAPI + 前端单页（地图 + 聊天 + 天气图） | 浏览器能看云图、能提问、引用可点 |
 | **M5** | Capacitor 打包 | Android 真机能装、能显示地图、能对话 |
-| **M6** | 回归问题集（10 个明安图/锡林浩特/二连浩特问题） | `not_covered` 与 `basis` 合理，无编造数值 |
+| **M6** ✅ | 回归问题集（10 个明安图/锡林浩特/二连浩特问题） | 录制基线 + 离线回放；10/10 通过，硬约束见 `core/validate.py` |
 
 ---
 
@@ -221,6 +225,7 @@ cd web && npm run dev      # http://localhost:5173
 | 解释层 `max_tokens` | 2000 | 2000 时真实回答被截断（`finish_reason=length`，JSON 断在 4134 字符） | 默认提到 3000 + 截断检测 + 重试时要求「精简、facts ≤ 6 条」 |
 | 和风预警接口 | 文档写 `/v7/warning/now` | 该接口已废弃（实测 403 `Deprecated`，官方说明 2026-09 停用）；新接口 `GET /weatheralert/v1/current/{lat}/{lon}`，仍用 `?key=`（Bearer 会 401） | 已切到新接口；预警原文与 `metadata.attributions`（国家预警信息发布中心）一起展示 |
 | 和风天气端点 | 文档写 `devapi.qweather.com` 与 `geoapi` | 新版控制台给每个账号独立 **API Host**，旧 host 一律 403 `Invalid Host`；城市搜索改到 `/geo/v2/city/lookup`，预警在 `/v7/warning/now` | 新增 `SKYLENS_QWEATHER_API_HOST`，URL 由它拼出；`doctor` 会直接报 `Invalid Host` |
+| 实况来源 | 站点 METAR 作为「真·观测」 | 明安图镇最近可用 METAR 在 281 km 外、机场 8 °C 而本地格点实况 -7.3 °C | 新增和风格点实况（`observed.local`）作为本地实况，机场站点保留并标注距离/代表性 |
 | 引用路径写法 | 文档写 `daily[0].temp_max` | DeepSeek 实际写 `daily.1.precip_mm.mean`（点号下标），浏览器端因此降级过一次 | 解析器同时接受 `[1]` 与 `.1` 两种下标写法，仍然只认 fact_pack 里真实存在的路径 |
 | 模型名 | `deepseek-chat` | 服务端返回的实际模型是 `deepseek-flash` | 配置不变（用官方别名），`doctor` 会打印真实模型名 |
 
@@ -247,6 +252,23 @@ cd web && npm run dev      # http://localhost:5173
 1. **预警与官方预报原样传播**：注明台站名称与发布时间，不得更改内容和结论；AI 解读与原文分栏显示。
 2. **不得向境外提供从 data.cma.cn 获取的资料**：LLM 只用境内模型；将来接境外模型时须按 `origin` 标记剥离。
 3. **地图须有审图号**：底图用天地图；全项目 WGS-84/CGCS2000，禁止 GCJ-02 纠偏与混搭。
+
+---
+
+## 回归集与快照
+
+```bash
+uv run python scripts/run_regression.py --offline   # 回放录制答案（不花钱，CI 用）
+uv run python scripts/run_regression.py --live      # 真实调用并当场判定（nightly）
+uv run python scripts/run_regression.py --record    # 更新基线（会花钱）
+uv run skylens packs                                # 查看本地快照
+uv run skylens replay <fact_pack_id> --explain      # 用同一份事实回放解释
+```
+
+每次生成 fact_pack 都会落一份快照到 `~/.cache/skylens/packs`（同 id 只存一次）：
+既是 M6 的输入样本，也能复盘「昨天为什么这么说」。回归判据在
+[`core/validate.py`](src/skylens/core/validate.py) 的 `assert_answer_invariants`：契约字段齐全、
+每个 ref 可解析、citations 非空、代表性低必须声明、有预警必须提及、降级必须给原因与未覆盖项。
 
 ---
 

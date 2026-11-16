@@ -54,6 +54,35 @@ export interface FactPack {
     weather_code?: string | null;
     source?: string;
     source_url?: string;
+    local?: {
+      kind: string;
+      valid_time: string | null;
+      temp_c: number | null;
+      feels_like_c: number | null;
+      dewpoint_c: number | null;
+      rh_pct: number | null;
+      pressure_msl_hpa: number | null;
+      wind_dir_deg: number | null;
+      wind_speed_ms: number | null;
+      wind_gust_ms: number | null;
+      visibility_m: number | null;
+      weather_text?: string | null;
+      weather_code?: string | null;
+      cloud_cover_pct?: number | null;
+      precip_mm?: number | null;
+      source?: string;
+      source_url?: string;
+      attribution?: string[];
+    };
+    temp_adjusted?: {
+      temp_c: number | null;
+      observed_station_temp_c: number;
+      elevation_delta_m: number;
+      lapse_rate_c_per_km: number;
+      method: string;
+      confidence: string;
+      caveats: string[];
+    };
     representativeness?: { level: string; reason: string };
   };
   trend_24h: Record<string, number | string> | null;
@@ -77,6 +106,23 @@ export interface FactPack {
     season: string;
     enso: { phase: string; oni: number | null; month: string; source: string } | null;
   } | null;
+  derived: Record<
+    string,
+    {
+      value: number | null;
+      unit: string;
+      method: string;
+      formula?: string;
+      label?: string;
+      stability?: string;
+      thickness_500_850_m?: number;
+      h850_estimated_m?: number;
+      confidence?: string;
+      caveats?: string[];
+      basis?: string[];
+    }
+  > | null;
+  derived_note?: string | null;
   warnings: Array<{
     title: string;
     level?: string | null;
@@ -87,6 +133,7 @@ export interface FactPack {
     text: string;
     advice?: string | null;
     attribution?: string | null;
+    source_url?: string | null;
     policy?: string;
   }>;
   provenance: {

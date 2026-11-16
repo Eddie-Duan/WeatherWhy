@@ -23,7 +23,8 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from skylens.cache.store import TTLCache
-from skylens.core import vocab
+from skylens.core import derive, vocab
+from skylens.core.derive import adjust_temperature_to_elevation
 from skylens.core.synoptic import build_synoptic
 from skylens.net import create_client
 from skylens.providers import charts as charts_provider
@@ -97,6 +98,7 @@ async def build_fact_pack(
     chart_loader: Loader | None = None,
     enso_loader: Loader | None = None,
     warnings_loader: Loader | None = None,
+    local_loader: Loader | None = None,
 ) -> dict[str, Any]:
     """给定地名（或坐标）产出 fact_pack。取数失败只记 ``missing``，不抛异常。"""
     settings = settings or get_settings()
@@ -109,6 +111,7 @@ async def build_fact_pack(
     chart_loader = chart_loader or charts_provider.fetch_charts
     enso_loader = enso_loader or enso_provider.fetch_enso
     warnings_loader = warnings_loader or qweather_provider.fetch_warnings
+    local_loader = local_loader or qweather_provider.fetch_now
 
     own_client = client is None
     client = client or create_client(settings)
@@ -176,6 +179,13 @@ async def build_fact_pack(
             cache=cache,
             client=client,
         )
+        local_coro = local_loader(
+            location["lat"],
+            location["lon"],
+            settings=settings,
+            cache=cache,
+            client=client,
+        )
         (
             (forecast, forecast_entry),
             (observed, observed_entry),
@@ -186,6 +196,7 @@ async def build_fact_pack(
             ),
             (enso, enso_entry),
             (alerts, alerts_entry),
+            (local_now, local_entry),
         ) = await asyncio.gather(
             _timed("open_meteo", forecast_coro, settings.request_deadline_s),
             _timed("metar", observed_coro, settings.request_deadline_s),
@@ -193,6 +204,7 @@ async def build_fact_pack(
             _timed("charts", charts_coro, settings.request_deadline_s),
             _timed("enso", enso_coro, settings.request_deadline_s),
             _timed("qweather", warnings_coro, settings.request_deadline_s),
+            _timed("qweather_current", local_coro, settings.request_deadline_s),
         )
 
         providers = [
@@ -203,13 +215,35 @@ async def build_fact_pack(
             charts_entry,
             enso_entry,
             alerts_entry,
+            local_entry,
         ]
         missing: list[str] = []
         notes: list[str] = []
 
+        if location.get("geocode_note"):
+            notes.append(str(location["geocode_note"]))
+        if location.get("geocode_attempt_errors"):
+            notes.append(
+                "地理编码降级："
+                + "；".join(
+                    f"{item['source']} {item['error']}"
+                    for item in location["geocode_attempt_errors"]
+                )
+            )
+
         if location.get("elevation_m") is None and forecast.get("elevation_m") is not None:
             location["elevation_m"] = forecast["elevation_m"]
             notes.append("海拔取自 Open-Meteo 格点（地理编码源未提供）")
+
+        if observed.get("available"):
+            adjustment = adjust_temperature_to_elevation(
+                observed.get("temp_c"),
+                (observed.get("station") or {}).get("elevation_m"),
+                location.get("elevation_m"),
+            )
+            if adjustment is not None:
+                observed["temp_adjusted"] = adjustment
+                notes.append("观测气温已按标准递减率订正到站点海拔（标注为推断，不替换原始观测）")
 
         if "error" in forecast:
             missing.append(f"多模式预报（{forecast['error']}）")
@@ -233,6 +267,36 @@ async def build_fact_pack(
             {} if "error" in pressure else pressure,
             charts.get("charts") or [],
         )
+        derived: dict[str, Any] = {}
+        if observed.get("available"):
+            for name, item in (
+                (
+                    "wind_chill_c",
+                    derive.wind_chill_c(observed.get("temp_c"), observed.get("wind_speed_ms")),
+                ),
+                (
+                    "dewpoint_depression_c",
+                    derive.dewpoint_depression_c(
+                        observed.get("temp_c"), observed.get("dewpoint_c")
+                    ),
+                ),
+                (
+                    "pressure_tendency",
+                    derive.pressure_tendency(observed.get("pressure_trend_3h_hpa")),
+                ),
+            ):
+                if item is not None:
+                    derived[name] = item
+        thickness = derive.thickness_and_lapse_rate(
+            pressure.get("h500_geopotential_m"),
+            pressure.get("t500_c"),
+            pressure.get("t850_c"),
+        )
+        if thickness is not None:
+            derived["thickness_850_500"] = thickness
+        if derived:
+            notes.append("derived 为本项目按公式自算的推断值（每项都带 method/formula/caveats）")
+
         climate: dict[str, Any] = {
             "season": vocab.season_label(_now().month),
             "enso": (
@@ -248,6 +312,14 @@ async def build_fact_pack(
             ),
             "climate_normal": None,
         }
+
+        if local_now.get("available"):
+            observed["local"] = {k: v for k, v in local_now.items() if k not in ("provider",)}
+            notes.append("observed.local 为和风格点实况（非站点观测），与机场 METAR 需分开解读")
+        elif local_now.get("error") or local_now.get("reason"):
+            notes.append(
+                "本地格点实况不可用：" + str(local_now.get("error") or local_now.get("reason"))
+            )
 
         pack: dict[str, Any] = {
             "schema_version": SCHEMA_VERSION,
@@ -268,6 +340,12 @@ async def build_fact_pack(
             ),
             "synoptic": synoptic,
             "climate": climate,
+            "derived": derived or None,
+            "derived_note": (
+                "本块为项目自行计算的推断值（非观测、非官方预报）；每项含 method/formula/caveats"
+                if derived
+                else None
+            ),
             "warnings": alerts.get("warnings") or [],
             "provenance": {
                 "providers": providers,

@@ -124,9 +124,56 @@ class TestNominatimFirst:
         assert result["error"] == "geocode_not_found"
 
     @respx.mock
-    async def test_network_error_is_not_raised(self) -> None:
-        respx.get(registry.NOMINATIM_SEARCH).mock(side_effect=httpx.ConnectError("boom"))
+    async def test_nominatim_timeout_does_not_kill_the_chain(self) -> None:
+        """实测教训：Nominatim 一超时，整条链就 geocode_failed。现在必须逐源降级。"""
+        respx.get(registry.NOMINATIM_SEARCH).mock(side_effect=httpx.ConnectTimeout("timed out"))
+        respx.get(registry.OPEN_METEO_GEOCODING).mock(
+            return_value=httpx.Response(200, json={"generationtime_ms": 0.1})
+        )
         result = await geocode.geocode("明安图镇", settings=_settings())
 
-        assert result["error"] == "geocode_failed"
-        assert "boom" in result["detail"]
+        # 网络全挂 → 本地兜底表接住
+        assert result["geocode_source"] == "local_table"
+        assert result["lat"] == pytest.approx(42.2984)
+        assert result.get("geocode_note")
+        assert result["geocode_attempt_errors"][0]["source"] == "nominatim"
+
+    @respx.mock
+    async def test_implausible_qweather_match_is_rejected(self) -> None:
+        """和风把「明安图镇」匹配到吉林安图（43.11,128.90），必须被合理性规则挡掉。"""
+        settings = _settings(qweather_key="k", qweather_api_host="demo.re.qweatherapi.com")
+        respx.get(registry.NOMINATIM_SEARCH).mock(side_effect=httpx.ConnectError("boom"))
+        respx.get(qweather.geo_url(settings)).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "code": "200",
+                    "location": [
+                        {
+                            "name": "安图",
+                            "lat": "43.11",
+                            "lon": "128.90",
+                            "adm1": "吉林省",
+                            "adm2": "延边朝鲜族自治州",
+                        }
+                    ],
+                },
+            )
+        )
+        respx.get(registry.OPEN_METEO_GEOCODING).mock(
+            return_value=httpx.Response(200, json={"generationtime_ms": 0.1})
+        )
+        result = await geocode.geocode("明安图镇", settings=settings)
+
+        assert result["geocode_source"] == "local_table"
+        assert result["name"] == "明安图镇"
+
+    @respx.mock
+    async def test_local_table_survives_total_network_failure(self) -> None:
+        respx.get(registry.NOMINATIM_SEARCH).mock(side_effect=httpx.ConnectTimeout("x"))
+        respx.get(registry.OPEN_METEO_GEOCODING).mock(side_effect=httpx.ConnectTimeout("x"))
+        result = await geocode.geocode("锡林浩特", settings=_settings())
+
+        assert result["geocode_source"] == "local_table"
+        assert result["name"] == "锡林浩特市"
+        assert result["geocode_confidence"] == 0.7

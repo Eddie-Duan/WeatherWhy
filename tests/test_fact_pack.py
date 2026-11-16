@@ -137,6 +137,26 @@ async def fake_enso(**_: Any) -> dict[str, Any]:
 WARNING_TEXT = "正镶白旗气象台2026年11月15日11时00分发布大风蓝色预警信号：24小时内可能受大风影响。"
 
 
+LOCAL_NOW = {
+    "provider": "qweather_current",
+    "available": True,
+    "kind": "格点实况（非站点观测）",
+    "valid_time": "2026-11-15T17:00:00+08:00",
+    "temp_c": -7.2,
+    "feels_like_c": -12.9,
+    "rh_pct": 86.0,
+    "pressure_msl_hpa": 1026.9,
+    "wind_dir_deg": 271.0,
+    "wind_speed_ms": 8.3,
+    "weather_text": "阴",
+    "source": "和风天气 current（格点实况）",
+}
+
+
+async def fake_local(lat: float, lon: float, **_: Any) -> dict[str, Any]:
+    return dict(LOCAL_NOW)
+
+
 async def fake_warnings(lat: float, lon: float, **_: Any) -> dict[str, Any]:
     return {
         "provider": "qweather",
@@ -165,6 +185,7 @@ async def build(**overrides: Any) -> dict[str, Any]:
         "chart_loader": fake_charts,
         "enso_loader": fake_enso,
         "warnings_loader": fake_warnings,
+        "local_loader": fake_local,
     }
     kwargs.update(overrides)
     return await fact_pack.build_fact_pack("明安图镇", **kwargs)
@@ -184,6 +205,8 @@ class TestContract:
             "synoptic",
             "climate",
             "warnings",
+            "derived",
+            "derived_note",
             "provenance",
         }
         assert pack["schema_version"] == "1.0"
@@ -217,6 +240,24 @@ class TestContract:
         assert pack["climate"]["enso"]["phase"] == "El Niño"
         assert pack["climate"]["climate_normal"] is None
 
+    async def test_local_grid_observation_is_separate_from_station(self) -> None:
+        pack = await build()
+        local = pack["observed"]["local"]
+
+        assert local["temp_c"] == -7.2
+        assert "格点" in local["kind"]
+        # 站点观测仍然保留（数值可能差很多，这正是要展示的）
+        assert pack["observed"]["temp_c"] == -3.2
+        assert any("格点实况" in note for note in pack["provenance"]["notes"])
+
+    async def test_local_unavailable_is_noted(self) -> None:
+        async def broken(lat: float, lon: float, **_: Any) -> dict[str, Any]:
+            return {"provider": "qweather_current", "available": False, "reason": "未配置 key"}
+
+        pack = await build(local_loader=broken)
+        assert "local" not in pack["observed"]
+        assert any("本地格点实况不可用" in note for note in pack["provenance"]["notes"])
+
     async def test_warnings_are_moved_verbatim(self) -> None:
         pack = await build()
         assert pack["warnings"][0]["text"] == WARNING_TEXT
@@ -234,6 +275,25 @@ class TestContract:
         assert pack["warnings"] == []
         assert any("官方预警" in item for item in pack["provenance"]["missing"])
 
+    async def test_station_temperature_is_adjusted_to_site_elevation(self) -> None:
+        pack = await build()
+        adjusted = pack["observed"]["temp_adjusted"]
+
+        assert adjusted["observed_station_temp_c"] == -3.2
+        assert adjusted["elevation_delta_m"] == 335  # 1345（格点）− 1010（站点）
+        assert adjusted["confidence"] == "推断（自算）"
+        assert adjusted["temp_c"] < adjusted["observed_station_temp_c"]
+        assert any("订正" in note for note in pack["provenance"]["notes"])
+
+    async def test_no_adjustment_when_elevations_close(self) -> None:
+        async def close_station(lat: float, lon: float, **_: Any) -> dict[str, Any]:
+            observed = dict(OBSERVED)
+            observed["station"] = {**OBSERVED["station"], "elevation_m": 1300}
+            return observed
+
+        pack = await build(observer=close_station)
+        assert "temp_adjusted" not in pack["observed"]
+
     async def test_elevation_falls_back_to_forecast_grid(self) -> None:
         pack = await build()
         assert pack["location"]["elevation_m"] == 1345.0
@@ -250,6 +310,7 @@ class TestContract:
             "charts",
             "enso",
             "qweather",
+            "qweather_current",
         ]
         assert all(entry["ok"] for entry in pack["provenance"]["providers"])
 

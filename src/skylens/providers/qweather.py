@@ -27,6 +27,7 @@ from skylens.settings import Settings
 
 GEO_PATH = "/geo/v2/city/lookup"
 ALERT_PATH = "/weatheralert/v1/current"
+CURRENT_PATH = "/weather/v1/current"
 PUBLIC_POLICY = "官方原文原样传播：不得改写、不得截断、不得合并"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 
@@ -47,6 +48,11 @@ LEVEL_LABELS = {
 
 def geo_url(settings: Settings) -> str:
     return f"{settings.qweather_base_url}{GEO_PATH}"
+
+
+def current_url(settings: Settings, lat: float, lon: float) -> str:
+    """本地格点实况：把坐标放进路径（最多两位小数）。"""
+    return f"{settings.qweather_base_url}{CURRENT_PATH}/{lat:.2f}/{lon:.2f}"
 
 
 def alert_url(settings: Settings, lat: float, lon: float) -> str:
@@ -157,6 +163,116 @@ async def fetch_warnings(
             "provider": "qweather",
             "available": False,
             "warnings": [],
+            "error": str(exc),
+            "source_url": source_url,
+        }
+    finally:
+        if own_client:
+            await client.aclose()
+
+
+def _value(block: dict[str, Any] | None) -> float | None:
+    if not isinstance(block, dict):
+        return None
+    raw = block.get("value")
+    try:
+        return None if raw is None else float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_current(payload: dict[str, Any], source_url: str) -> dict[str, Any]:
+    """和风 ``/weather/v1/current`` → fact_pack 的 ``observed.local``。
+
+    这是**格点/融合实况**，不是机场站点观测：它就在目标坐标上，能代表本地，
+    但不是仪器直读记录——所以 ``kind`` 字段必须写清楚，前端与解释层都要区分。
+    """
+    humidity = payload.get("humidity")
+    if isinstance(humidity, (int, float)) and humidity <= 1:
+        humidity = humidity * 100
+    cloud = payload.get("cloudCover")
+    if isinstance(cloud, (int, float)) and cloud <= 1:
+        cloud = cloud * 100
+    condition = payload.get("condition") or {}
+    wind = payload.get("wind") or {}
+    precipitation = payload.get("precipitation") or {}
+    amount = precipitation.get("amount") or {}
+    return {
+        "kind": "格点实况（非站点观测）",
+        "valid_time": to_shanghai(payload.get("validTime")),
+        "temp_c": _value(payload.get("temperature")),
+        "feels_like_c": _value(payload.get("feelsLike")),
+        "dewpoint_c": _value(payload.get("dewPoint")),
+        "rh_pct": None if humidity is None else round(float(humidity)),
+        "pressure_msl_hpa": _value(payload.get("pressure")),
+        "wind_dir_deg": (wind.get("direction") or {}).get("degree"),
+        "wind_speed_ms": _value(wind.get("speed")),
+        "wind_gust_ms": _value(payload.get("windGust")),
+        "visibility_m": _value(payload.get("visibility")),
+        "cloud_cover_pct": None if cloud is None else round(float(cloud)),
+        "precip_mm": _value(amount),
+        "precip_type": precipitation.get("type"),
+        "weather_text": condition.get("text"),
+        "weather_code": condition.get("code"),
+        "attribution": (payload.get("metadata") or {}).get("attributions") or [],
+        "source": "和风天气 current（格点实况）",
+        "source_url": source_url,
+    }
+
+
+async def fetch_now(
+    lat: float,
+    lon: float,
+    *,
+    settings: Settings | None = None,
+    cache: TTLCache | None = None,
+    client: httpx.AsyncClient | None = None,
+) -> dict[str, Any]:
+    """本地格点实况。未配置 key 时返回 ``{"available": False, "reason": ...}``。"""
+    settings = settings or Settings()
+    if settings.qweather_key is None:
+        return {
+            "provider": "qweather_current",
+            "available": False,
+            "reason": "未配置 SKYLENS_QWEATHER_KEY",
+        }
+
+    url = current_url(settings, lat, lon)
+    params = {"key": settings.qweather_key.get_secret_value(), "lang": "zh"}
+    source_url = str(httpx.Request("GET", url, params={**params, "key": "<redacted>"}).url)
+
+    own_client = client is None
+    client = client or create_client(settings)
+    try:
+        key = make_key(url, {**params, "key": "<redacted>"})
+        payload = cache_get(cache, key, registry.TTLS.metar)
+        if payload is None:
+            resp = await client.get(url, params=params)
+            if resp.status_code >= 400:
+                return {
+                    "provider": "qweather_current",
+                    "available": False,
+                    "error": f"HTTP {resp.status_code}",
+                    "source_url": source_url,
+                }
+            payload = resp.json() if resp.content else {}
+            cache_set(cache, key, payload)
+        if not payload.get("temperature"):
+            return {
+                "provider": "qweather_current",
+                "available": False,
+                "error": "响应缺少 temperature",
+                "source_url": source_url,
+            }
+        return {
+            "provider": "qweather_current",
+            "available": True,
+            **parse_current(payload, source_url),
+        }
+    except Exception as exc:  # provider 不抛异常出界
+        return {
+            "provider": "qweather_current",
+            "available": False,
             "error": str(exc),
             "source_url": source_url,
         }

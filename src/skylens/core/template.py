@@ -31,7 +31,22 @@ def _facts(pack: dict[str, Any]) -> list[dict[str, str]]:
     daily = ((pack.get("forecast") or {}).get("daily") or [{}])[0]
     synoptic = pack.get("synoptic") or {}
     candidates = [
-        ("现在气温", "observed.temp_c", _num(observed.get("temp_c"), "°C")),
+        (
+            "本地实况（和风格点）",
+            "observed.local.temp_c",
+            _num((observed.get("local") or {}).get("temp_c"), "°C"),
+        ),
+        ("机场站点观测", "observed.temp_c", _num(observed.get("temp_c"), "°C")),
+        (
+            "体感温度（自算）",
+            "derived.wind_chill_c.value",
+            _num(((pack.get("derived") or {}).get("wind_chill_c") or {}).get("value"), "°C"),
+        ),
+        (
+            "海拔订正后气温（推断）",
+            "observed.temp_adjusted.temp_c",
+            _num((observed.get("temp_adjusted") or {}).get("temp_c"), "°C"),
+        ),
         ("露点", "observed.dewpoint_c", _num(observed.get("dewpoint_c"), "°C")),
         ("海平面气压", "observed.pressure_msl_hpa", _num(observed.get("pressure_msl_hpa"), "hPa")),
         (
@@ -82,6 +97,19 @@ def render(pack: dict[str, Any]) -> dict[str, Any]:
     reps = observed.get("representativeness") or {}
     location = pack.get("location") or {}
 
+    warnings = pack.get("warnings") or []
+    warnings_text = (
+        "官方预警 "
+        + str(len(warnings))
+        + " 条（原文照搬）："
+        + "；".join(
+            f"{item.get('title')}（{item.get('issuer')} {item.get('issued_at')}）"
+            for item in warnings
+        )
+        if warnings
+        else ""
+    )
+
     observed_text = (
         f"观测取自 {station.get('id', '缺')}（{station.get('name', '缺')}，"
         f"{station.get('distance_km', '缺')} km 外），有效时刻 {observed.get('valid_time', '缺')}。"
@@ -120,7 +148,7 @@ def render(pack: dict[str, Any]) -> dict[str, Any]:
     return {
         "headline": f"{location.get('name', '该地')}：本次仅罗列事实，未生成成因解释",
         "facts": _facts(pack),
-        "observed": observed_text,
+        "observed": (observed_text + ("\n" + warnings_text if warnings_text else "")),
         "forecast": forecast_text,
         "inference": {
             "text": (
@@ -132,7 +160,10 @@ def render(pack: dict[str, Any]) -> dict[str, Any]:
         "uncertainty": (
             f"要素一致性：{_agreement_text(pack)}；观测代表性 {reps.get('level', '缺')}。"
         ),
-        "advice": "不做生活建议——结论尚未生成，请以官方发布与原始数据为准。",
+        "advice": (
+            ("请先阅读上方官方预警原文，并以官方发布为准。\n" if warnings else "")
+            + "不做生活建议——结论尚未生成，请以官方发布与原始数据为准。"
+        ),
         "not_covered": list((pack.get("provenance") or {}).get("missing") or []),
         "citations": list(dict.fromkeys(citations)),
         "degraded": True,

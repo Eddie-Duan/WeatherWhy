@@ -23,7 +23,9 @@ class TestTemplateRender:
         answer = template.render(sample_pack)
         values = {fact["label"]: fact["value"] for fact in answer["facts"]}
 
-        assert values["现在气温"] == "10 °C"
+        assert values["本地实况（和风格点）"] == "-7.2 °C"
+        assert values["机场站点观测"] == "10 °C"
+        assert values["海拔订正后气温（推断）"] == "1.5 °C"
         assert values["500hPa 高度"] == "5503 m"
 
     def test_low_representativeness_is_stated(self, sample_pack: dict) -> None:
@@ -50,3 +52,18 @@ class TestTemplateRender:
         sample_pack["forecast"] = None
         answer = template.render(sample_pack)
         assert "没有可用预报" in answer["forecast"]
+
+    def test_warnings_are_carried_into_fallback(self, sample_pack: dict) -> None:
+        sample_pack["warnings"] = [
+            {
+                "title": "暴雪蓝色预警",
+                "issuer": "正镶白旗气象台",
+                "issued_at": "2026-11-15T18:15:00+08:00",
+                "text": "原文……",
+            }
+        ]
+        answer = template.render(sample_pack)
+
+        assert "官方预警 1 条" in answer["observed"]
+        assert "正镶白旗气象台" in answer["observed"]
+        assert "官方预警" in answer["advice"]
